@@ -2,10 +2,13 @@ package com.cid.sample.face;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.YuvImage;
@@ -23,6 +26,7 @@ import com.android.camera.DrawingView;
 import com.android.camera.PreviewFrameLayout;
 import com.android.camera.Utils;
 import com.credenceid.biometrics.Biometrics;
+import com.credenceid.face.FaceEngine;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -47,7 +51,7 @@ public class CameraActivity extends Activity
 		implements SurfaceHolder.Callback {
 	private final static String mTAG = CameraActivity.class.getSimpleName();
 
-	// To acheive high face detection rate we use lowest possible camera resolution for preview.
+	// To achieve high face detection rate we use lowest possible camera resolution for preview.
 	// For the actual picture size, we will use the largest available resolution so there is no
 	// loss in face image quality.
 	private final static int P_WIDTH = 320;
@@ -75,6 +79,12 @@ public class CameraActivity extends Activity
 	// so camera preview does not start without it first being configured.
 	private boolean mIsCameraConfigured = false;
 
+	// Variable to keep track of which face template we are saving.
+	private boolean mSaveFirstFace = true;
+	// Face templates to match against with one another.
+	private byte[] mFaceTemplateOne;
+	private byte[] mFaceTemplateTwo;
+
 	/* This callback is invoked after camera finishes taking a picture. */
 	private Camera.PictureCallback mOnPictureTakenCallback = new Camera.PictureCallback() {
 		public void onPictureTaken(byte[] data, Camera cam) {
@@ -92,7 +102,8 @@ public class CameraActivity extends Activity
 			// Now that camera has finished taking a picture we can allow user to re-take an iamge.
 			setCaptureButtonVisibility(true);
 
-			//runFaceOperation(data);
+			// Call method to run a full face detection.
+			runFaceOperation(data);
 		}
 	};
 
@@ -131,6 +142,8 @@ public class CameraActivity extends Activity
 	protected void
 	onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d(mTAG, "onCreate()");
+
 		setContentView(R.layout.activity_camera);
 
 		mContext = this;
@@ -258,7 +271,24 @@ public class CameraActivity extends Activity
 	}
 
 	// --------------------------------------------------------------------------------------------
+	/* Tells camera to return preview frames in a certain width/height and aspect ratio. In this
+	 * case it is 320x240 frame sizes.
+	 *
+	 * @param width Width of preview frames to send back.
+	 * @param height Height of preview frames to send back.
+	 * @param ratio Aspect ration of preview frames to send back.
+	 */
+
 	//
+	private void
+	setPreviewSize(int width,
+				   int height,
+				   double ratio) {
+		Camera.Parameters parameters = mCamera.getParameters();
+		parameters.setPreviewSize(width, height);
+		mPreviewFrameLayout.setAspectRatio(ratio);
+		mCamera.setParameters(parameters);
+	}
 	// Methods used for initialization of layout components.
 	//
 	// --------------------------------------------------------------------------------------------
@@ -278,8 +308,6 @@ public class CameraActivity extends Activity
 	/* Configured all layout file component objects. Assigns listeners, configurations, etc. */
 	private void
 	configureLayoutComponents() {
-		this.setFlashButtonVisibility(true);
-
 		mPreviewFrameLayout.setVisibility(VISIBLE);
 		mDrawingView.setVisibility(VISIBLE);
 		mScannedImageView.setVisibility(VISIBLE);
@@ -402,25 +430,8 @@ public class CameraActivity extends Activity
 		}
 	}
 
-	/* Tells camera to return preview frames in a certain width/height and aspect ratio. In this
-	 * case it is 320x240 frame sizes.
-	 *
-	 * @param width Width of preview frames to send back.
-	 * @param height Height of preview frames to send back.
-	 * @param ratio Aspect ration of preview frames to send back.
-	 */
-	private void
-	setPreviewSize(int width,
-				   int height,
-				   double ratio) {
-		Camera.Parameters parameters = mCamera.getParameters();
-		parameters.setPreviewSize(width, height);
-		mPreviewFrameLayout.setAspectRatio(ratio);
-		mCamera.setParameters(parameters);
-	}
-
 	/* Tells camera to rotate captured pictured by a certain angle. This is required since on some
-	 * devices the physical camera hardware is 90 degress, etc.
+	 * devices the physical camera hardware is 90 degrees, etc.
 	 */
 	private void
 	setCameraPictureOrientation() {
@@ -437,7 +448,7 @@ public class CameraActivity extends Activity
 	}
 
 	/* Tells camera to rotate preview frames by a certain angle. This is required since on some
-	 * devices the physical camera hardware is 90 degress, etc.
+	 * devices the physical camera hardware is 90 degrees, etc.
 	 */
 	private void
 	setCameraPreviewDisplayOrientation() {
@@ -564,25 +575,14 @@ public class CameraActivity extends Activity
 		mCaptureButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
 	}
 
-	/* This method either hides or shows flash buttons allowing user to control flash. This is
-	 * required because after an image is captured a user should not be allowed to control flash
-	 * since camera is no longer in preview. Instead of disabling the buttons we hide them from
-	 * the user.
-	 *
-	 * @param visibility If true buttons are show, if false they are hidden.
-	 */
-	private void
-	setFlashButtonVisibility(boolean visibility) {
-		mFlashOnButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
-		mFlashOffButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
-	}
-
 	/* Sets camera flash.
 	 *
 	 * @param useFlash If true turns on flash, if false disables flash.
 	 */
 	private void
 	setFlashMode(boolean useFlash) {
+		Log.d(mTAG, "setFlashMode(boolean)");
+
 		// If camera object was destroyed, there is nothing to do.
 		if (mCamera == null)
 			return;
@@ -618,7 +618,6 @@ public class CameraActivity extends Activity
 
 		// Display all buttons in their proper states.
 		this.setCaptureButtonVisibility(true);
-		this.setFlashButtonVisibility(true);
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -633,6 +632,8 @@ public class CameraActivity extends Activity
 	@SuppressLint("SetTextI18n")
 	public void
 	performTapToFocus(final Rect touchRect) {
+		Log.d(mTAG, "performTapToFocus(Rect)");
+
 		if (!mInPreview)
 			return;
 
@@ -708,9 +709,9 @@ public class CameraActivity extends Activity
 		// Save fixed color image as final good Bitmap.
 		Bitmap bm = BitmapFactory.decodeByteArray(outStream.toByteArray(), 0, outStream.size());
 
-//		if (VIBEApplication.isDeviceOfType(CREDENCE_TWO_FAMILY)) {
-//			mFinalBitmap = ImageTools.Editor.Rotate(mFinalBitmap, 90);
-//		}
+		//		if (VIBEApplication.isDeviceOfType(CREDENCE_TWO_FAMILY)) {
+		//			mFinalBitmap = ImageTools.Editor.Rotate(mFinalBitmap, 90);
+		//		}
 
 		// Detect face on finalized Bitmap image.
 		mBiometricsManager.detectFace(bm, (Biometrics.ResultCode resultCode,
@@ -748,5 +749,126 @@ public class CameraActivity extends Activity
 			// Tell view to invoke an "onDraw()".
 			mDrawingView.invalidate();
 		});
+	}
+
+	private void
+	runFaceOperation(byte[] bitmapBytes) {
+		// If camera was closed, immediately after a preview callback exit out, this is to prevent
+		// NULL pointer exceptions when using the camera object later on.
+		if (mCamera == null || bitmapBytes == null)
+			return;
+
+		// Run template creation/matching on a different thread so that to the user it looks very
+		// fast with no UI lag.
+		new Thread(() -> {
+			Bitmap bm = BitmapFactory.decodeByteArray(bitmapBytes, 0, bitmapBytes.length);
+
+			// Create a face template for matching.
+			Log.d(mTAG, "Calling API for face template creation.");
+			mBiometricsManager.createFaceTemplate(bm, (Biometrics.ResultCode resultCode,
+													   byte[] template) -> {
+				if (resultCode == Biometrics.ResultCode.OK) {
+					// We want to save first template to first array and second template to second
+					// array. We have a variable to keep track of there to store templates to.
+					if (mSaveFirstFace) {
+						mFaceTemplateOne = template;
+						mSaveFirstFace = false;
+					} else {
+						mFaceTemplateTwo = template;
+						mSaveFirstFace = true;
+
+						// Now that both templates have been saved, we can do a match.
+						matchFaceTemplates(mFaceTemplateOne, mFaceTemplateTwo);
+					}
+				}
+			});
+
+			// Run a full face analysis.
+			runFullFaceDetection(bm);
+		}).start();
+	}
+
+	/* Performs a full face detection with age, gender, head pose estimation, etc. detection.
+	 *
+	 * @param bitmap Bitmap image to run face analysis on.
+	 */
+	private void
+	runFullFaceDetection(Bitmap bitmap) {
+		// Perform a more in-depth analysis of face detection.
+		mBiometricsManager.analyzeFaceImage(bitmap, (Biometrics.ResultCode resultCode,
+													 RectF rectF,
+													 ArrayList<PointF> landmark5,
+													 ArrayList<PointF> landmark68,
+													 float[] floats,
+													 FaceEngine.HeadPoseDirection[] poseDirections,
+													 FaceEngine.Gender gender,
+													 int age,
+													 FaceEngine.Emotion emotion,
+													 boolean glasses,
+													 int imageQuality) -> {
+			if (resultCode != Biometrics.ResultCode.OK)
+				return;
+
+			Log.d(mTAG, "PoseDirections[Roll, Pitch, Yaw]: "
+					+ poseDirections[0].name() + ", "
+					+ poseDirections[1].name() + ", "
+					+ poseDirections[2].name());
+			Log.d(mTAG, "Gender: " + gender.name());
+			Log.d(mTAG, "Age: " + age);
+			Log.d(mTAG, "Emotion: " + emotion.name());
+			Log.d(mTAG, "Has Glasses: " + glasses);
+			Log.d(mTAG, "Image Quality: " + imageQuality);
+		});
+	}
+
+	/* Matches two face templates.
+	 *
+	 * @param faceTemplateOne First template to match.
+	 * @param faceTemplateTwo Second template to match.
+	 */
+	private void
+	matchFaceTemplates(byte[] faceTemplateOne,
+					   byte[] faceTemplateTwo) {
+		Log.d(mTAG, "matchFaceTemplates(byte[], byte[])");
+
+		// Display a dialog letting user know that some processing is happening.
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+		alertDialogBuilder.setTitle("Face Match Score");
+		alertDialogBuilder.setCancelable(false);
+		alertDialogBuilder.setMessage("Calculating score, please wait...");
+		AlertDialog alertDialog = alertDialogBuilder.create();
+
+		// Remember that this function is running inside a thread, so all UI operations MUST be
+		// done on the UI thread.
+		runOnUiThread(alertDialog::show);
+
+		if (faceTemplateOne == null || faceTemplateOne.length == 0
+				|| faceTemplateTwo == null || faceTemplateTwo.length == 0) {
+
+			runOnUiThread(() -> {
+				alertDialog.dismiss();
+				alertDialog.setMessage("Score: 0");
+				alertDialog.show();
+			});
+			return;
+		}
+
+		mBiometricsManager.matchFaceTemplates(faceTemplateOne, faceTemplateTwo,
+				(Biometrics.ResultCode resultCode, int matchScore) ->
+						runOnUiThread(() -> {
+							// Remove old dialog, update dialog UI, then re-show new dialog.
+							alertDialog.dismiss();
+
+							alertDialogBuilder.setPositiveButton("Ok", (DialogInterface dialog,
+																		int which) -> {
+							});
+
+							if (resultCode == Biometrics.ResultCode.OK)
+								alertDialogBuilder.setMessage("Score: " + matchScore);
+							else alertDialogBuilder.setMessage("Score: 0");
+
+							alertDialogBuilder.show();
+						}));
+
 	}
 }

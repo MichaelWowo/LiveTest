@@ -46,6 +46,9 @@ public class LaunchActivity
 		// If application does not have permission to camera it will be requested. When application
 		// is launched for the first time you will first need to accept permissions then restart
 		// application. This is because camera initialization is only called once on start.
+		//
+		// If you notice that camera fails to start, then you may have to go and manually give this
+		// application permissions.
 		this.requestPermissions();
 
 		// Create new instance of object to use biometric APIs.
