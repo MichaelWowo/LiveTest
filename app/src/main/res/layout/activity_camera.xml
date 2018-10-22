@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<!-- Responsible for camera preview and drawing surfaces. -->
+	<RelativeLayout
+		android:id="@+id/camera_surface_layout"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:layout_centerHorizontal="true" >
+
+		<com.android.camera.PreviewFrameLayout
+			android:id="@+id/preview_frame_layout"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:layout_centerHorizontal="true">
+
+			<SurfaceView
+				android:id="@+id/scanned_imageview"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:layout_alignParentTop="true"
+				android:layout_centerHorizontal="true"
+				android:background="@null" />
+
+		</com.android.camera.PreviewFrameLayout>
+
+		<com.android.camera.DrawingView
+			android:id="@+id/drawing_view"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:layout_centerHorizontal="true" />
+
+	</RelativeLayout>
+
+	<TextView
+		android:id="@+id/status_textview"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentTop="true"
+		android:layout_marginTop="5dp"
+		android:gravity="center"
+		android:textColor="#FF0000"
+		android:textSize="20sp" />
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="true"
+		android:layout_marginBottom="15dp"
+		android:orientation="horizontal">
+
+		<Button
+			android:id="@+id/flash_on_button"
+			android:layout_width="150dp"
+			android:layout_height="75dp"
+			android:layout_marginStart="10dp"
+			android:text="@string/activity_main_flash_on_label"
+			android:textSize="20sp" />
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/capture_button"
+			android:layout_width="200dp"
+			android:layout_height="75dp"
+			android:text="@string/activity_main_capture_label"
+			android:textSize="20sp" />
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/flash_off_button"
+			android:layout_width="150dp"
+			android:layout_height="75dp"
+			android:layout_marginEnd="10dp"
+			android:text="@string/activity_main_flash_off_label"
+			android:textSize="20sp" />
+
+	</LinearLayout>
+
+</RelativeLayout>
