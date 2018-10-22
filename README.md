@@ -6,31 +6,31 @@ templates. This sample application also extensively explains how to use Android 
 
 
 ```java
-mBiometricsManager.detectFace(Bitmap, new FaceEngine.OnDetectFaceListener() {
+detectFace(Bitmap, new FaceEngine.OnDetectFaceListener() {
 	@Override
 	public void onDetectFace(Biometrics.ResultCode resultCode, RectF rectF) {
 	}
 };
 
-mBiometricsManager.detectFace(byte[], int, int, new FaceEngine.OnDetectFaceListener() {
+detectFace(byte[], int, int, new FaceEngine.OnDetectFaceListener() {
 	@Override
   	public void onDetectFace(Biometrics.ResultCode resultCode, RectF rectF) {
 	}
 };
 
-mBiometricsManager.createFaceTemplate(Bitmap, new FaceEngine.OnCreateFaceTemplateListener() {
+createFaceTemplate(Bitmap, new FaceEngine.OnCreateFaceTemplateListener() {
 	@Override
   	public void onCreateFaceTemplate(Biometrics.ResultCode resultCode, byte[] bytes) {
 	}
 });
 
-mBiometricsManager.createFaceTemplate(byte[], int, int, new FaceEngine.OnCreateFaceTemplateListener() {
+createFaceTemplate(byte[], int, int, new FaceEngine.OnCreateFaceTemplateListener() {
  	@Override
 	public void onCreateFaceTemplate(Biometrics.ResultCode resultCode, byte[] bytes) {
   	}
 });
 
-mBiometricsManager.matchFaceTemplates(byte[], byte[], new FaceEngine.OnMatchFaceTemplatesListener() {
+matchFaceTemplates(byte[], byte[], new FaceEngine.OnMatchFaceTemplatesListener() {
   	@Override
 	public void onMatchFaceTemplates(Biometrics.ResultCode resultCode, int i) {
 	}
