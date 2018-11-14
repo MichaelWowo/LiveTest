@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<style name="PageButton">
 		<item name="android:layout_width">wrap_content</item>
@@ -11,6 +12,7 @@
 	</style>
 
 	<style name="FaceActivityButton" parent="PageButton">
-		<item name="android:layout_width">wrap_content</item>
+		<item name="android:layout_width">0dp</item>
+		<item name="android:layout_weight">1</item>
 	</style>
 </resources>

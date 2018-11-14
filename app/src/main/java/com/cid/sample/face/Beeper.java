@@ -9,11 +9,13 @@ import android.util.Log;
 
 import java.io.IOException;
 
+import static com.cid.sample.face.FaceActivity.getContext;
+
 /* This class is used to play the "click" sound you hear when doing a Fingerprint capture. This
  * class a custom Audio file we have placed inside the <assets/> directory.
  */
 @SuppressWarnings("WeakerAccess")
-class Beeper {
+public class Beeper {
 	private final static String CLICK_ASSET = "camera_click.ogg";
 	private static Beeper instance;
 	private final String TAG = Beeper.class.getSimpleName();
@@ -29,8 +31,7 @@ class Beeper {
 		Log.d(TAG, "Beeper::click");
 		try {
 			if (this.soundPlayer == null) {
-				final AudioManager mgr = (AudioManager)
-						CameraActivity.getContext().getSystemService(Context.AUDIO_SERVICE);
+				final AudioManager mgr = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
 
 				if (mgr != null)
 					mgr.setSpeakerphoneOn(true);
@@ -58,7 +59,7 @@ class Beeper {
 					return true;
 				});
 
-				AssetFileDescriptor click_fd = CameraActivity.getContext().getAssets().openFd(CLICK_ASSET);
+				AssetFileDescriptor click_fd = getContext().getAssets().openFd(CLICK_ASSET);
 
 				this.soundPlayer.setDataSource(click_fd.getFileDescriptor(),
 						click_fd.getStartOffset(),
