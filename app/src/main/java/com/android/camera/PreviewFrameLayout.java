@@ -7,7 +7,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.RelativeLayout;
 
-import com.cid.sample.face.FaceActivity;
+import com.credenceid.sample.face.FaceActivity;
 
 public class PreviewFrameLayout extends RelativeLayout {
 	private double mAspectRatio = 4.0 / 3.0;

@@ -1,4 +1,4 @@
-package com.cid.sample.face;
+package com.credenceid.sample.face;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -28,10 +28,10 @@ import android.widget.Toast;
 import com.android.camera.DrawingView;
 import com.android.camera.PreviewFrameLayout;
 import com.android.camera.Utils;
-import com.cid.sample.face.models.DeviceFamily;
-import com.cid.sample.face.models.DeviceType;
 import com.credenceid.biometrics.Biometrics;
 import com.credenceid.biometrics.BiometricsManager;
+import com.credenceid.biometrics.DeviceFamily;
+import com.credenceid.biometrics.DeviceType;
 import com.credenceid.face.FaceEngine.Emotion;
 import com.credenceid.face.FaceEngine.Gender;
 import com.credenceid.face.FaceEngine.HeadPoseDirection;
@@ -48,13 +48,14 @@ import static android.hardware.Camera.Parameters.FLASH_MODE_TORCH;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_SHORT;
-import static com.cid.sample.face.models.DeviceFamily.CONE;
-import static com.cid.sample.face.models.DeviceFamily.CTAB;
-import static com.cid.sample.face.models.DeviceFamily.CTWO;
-import static com.cid.sample.face.models.DeviceFamily.TRIDENT;
-import static com.cid.sample.face.models.DeviceType.TRIDENT_1;
-import static com.cid.sample.face.models.DeviceType.TRIDENT_2;
 import static com.credenceid.biometrics.Biometrics.ResultCode.FAIL;
+import static com.credenceid.biometrics.DeviceFamily.CredenceOne;
+import static com.credenceid.biometrics.DeviceFamily.CredenceTAB;
+import static com.credenceid.biometrics.DeviceFamily.CredenceTwo;
+import static com.credenceid.biometrics.DeviceFamily.TridentOne;
+import static com.credenceid.biometrics.DeviceFamily.TridentTwo;
+import static com.credenceid.biometrics.DeviceType.Trident_1;
+import static com.credenceid.biometrics.DeviceType.Trident_2;
 
 //TODO: Fix/add comments.
 public class FaceActivity
@@ -85,9 +86,9 @@ public class FaceActivity
 	@SuppressLint("StaticFieldLeak")
 	private static BiometricsManager mBiometricsManager;
 	/* Stores which Credence family of device's this app is running on. */
-	private static DeviceFamily mDeviceFamily = DeviceFamily.CID_PRODUCT;
+	private static DeviceFamily mDeviceFamily = DeviceFamily.InvalidDevice;
 	/* Stores which specific device this app is running on. */
-	private static DeviceType mDeviceType = DeviceType.CID_PRODUCT;
+	private static DeviceType mDeviceType = DeviceType.InvalidDevice;
 
 	/* Absolute paths of where face images are stores on disk. */
 	private final File mFiveMPFile
@@ -137,7 +138,7 @@ public class FaceActivity
 			setCaptureButtonVisibility(true);
 
 			Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-			if (CTWO == mDeviceFamily)
+			if (CredenceTwo == mDeviceFamily)
 				bitmap = Utils.rotateBitmap(bitmap, 90);
 
 			saveImage(bitmap, mEightMPCheckbox.isChecked());
@@ -321,7 +322,7 @@ public class FaceActivity
 		this.setFlashButtonVisibility(true);
 
 		/* Only CredenceTAB family of device's support 8MP back camera resolution.  */
-		if (mDeviceFamily != CTAB)
+		if (mDeviceFamily != CredenceTAB)
 			mEightMPCheckbox.setVisibility(View.GONE);
 
 		mPreviewFrameLayout.setVisibility(VISIBLE);
@@ -387,15 +388,15 @@ public class FaceActivity
 			previewSize.width = P_WIDTH;
 			previewSize.height = P_HEIGHT;
 
-			if (CTWO == mDeviceFamily) {
+			if (CredenceTwo == mDeviceFamily) {
 				mPreviewFrameLayout.getLayoutParams().width = (int) (previewSize.height * 2.5);
 				mPreviewFrameLayout.getLayoutParams().height = (int) (previewSize.width * 2.5);
 			}
 			mPreviewFrameLayout.setAspectRatio((previewSize.width) / (double) (previewSize.height));
 
-			ViewGroup.LayoutParams drawingViewLayoutParams= mDrawingView.getLayoutParams();
+			ViewGroup.LayoutParams drawingViewLayoutParams = mDrawingView.getLayoutParams();
 
-			if (CTAB == mDeviceFamily) {
+			if (CredenceTAB == mDeviceFamily) {
 				drawingViewLayoutParams.width = (int) (previewSize.width * 2.75);
 				drawingViewLayoutParams.height = (int) (previewSize.height * 2.75);
 			} else {
@@ -444,11 +445,11 @@ public class FaceActivity
 	setCameraPictureOrientation() {
 		Camera.Parameters parameters = mCamera.getParameters();
 
-		if (mDeviceType == TRIDENT_1)
+		if (mDeviceType == Trident_1)
 			parameters.setRotation(270);
-		else if (mDeviceType == TRIDENT_2)
+		else if (mDeviceType == Trident_2)
 			parameters.setRotation(180);
-		else if (mDeviceFamily == CONE || mDeviceFamily == CTAB)
+		else if (mDeviceFamily == CredenceOne || mDeviceFamily == CredenceTAB)
 			parameters.setRotation(0);
 
 		mCamera.setParameters(parameters);
@@ -464,7 +465,7 @@ public class FaceActivity
 		/* For C-TAB, the BACK camera requires 0, but FRONT camera is 180. In this example FRONT
 		 * camera is not used, so that case was not programed in.
 		 */
-		if (mDeviceFamily == TRIDENT || mDeviceFamily == CTAB)
+		if (mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo || mDeviceFamily == CredenceTAB)
 			orientation = 0;
 
 		mCamera.setDisplayOrientation(orientation);
@@ -599,7 +600,7 @@ public class FaceActivity
 		/* Camera flash parameters do not work on TAB/TRIDENT devices. In order to use flash on
 		 * these devices you must use the Credence APIs.
 		 */
-		if (mDeviceFamily == CTAB || mDeviceFamily == TRIDENT)
+		if (mDeviceFamily == CredenceTAB || mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo)
 			mBiometricsManager.cameraFlashControl(useFlash);
 		else {
 			try {
@@ -661,7 +662,7 @@ public class FaceActivity
 		focusList.add(new Camera.Area(targetFocusRect, 1000));
 
 		/* For certain device auto-focus parameters need to be explicitly setup. */
-		if (mDeviceFamily == CONE) {
+		if (mDeviceFamily == CredenceOne) {
 			Camera.Parameters para = mCamera.getParameters();
 			para.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
 			para.setFocusAreas(focusList);
@@ -718,7 +719,7 @@ public class FaceActivity
 		/* On CredenceTWO device's captured image is rotated by 270 degrees. To fix this rotate
 		 * image by another 90 degrees to have it right-side-up.
 		 */
-		if (CTWO == mDeviceFamily)
+		if (CredenceTwo == mDeviceFamily)
 			bm = Utils.rotateBitmap(bm, 90);
 
 		/* Detect face on finalized Bitmap image. */
@@ -738,7 +739,7 @@ public class FaceActivity
 				mDrawingView.setHasFace(true);
 
 				/* If a CredenceTWO device then bounding Rect needs to be scaled to properly fit. */
-				if (CTWO == mDeviceFamily) {
+				if (CredenceTwo == mDeviceFamily) {
 					mDrawingView.setFaceRect(rectF.left + 40,
 							rectF.top - 25,
 							rectF.right + 40,

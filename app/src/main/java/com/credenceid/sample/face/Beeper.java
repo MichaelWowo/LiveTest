@@ -1,4 +1,4 @@
-package com.cid.sample.face;
+package com.credenceid.sample.face;
 
 
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import static com.cid.sample.face.FaceActivity.getContext;
+import static com.credenceid.sample.face.FaceActivity.getContext;
 
 /* This class is used to play the "click" sound you hear when doing a Fingerprint capture. This
  * class a custom Audio file we have placed inside the <assets/> directory.
