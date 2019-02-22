@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
@@ -49,6 +48,7 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_SHORT;
 import static com.credenceid.biometrics.Biometrics.ResultCode.FAIL;
+import static com.credenceid.biometrics.Biometrics.ResultCode.OK;
 import static com.credenceid.biometrics.DeviceFamily.CredenceOne;
 import static com.credenceid.biometrics.DeviceFamily.CredenceTAB;
 import static com.credenceid.biometrics.DeviceFamily.CredenceTwo;
@@ -96,8 +96,11 @@ public class FaceActivity
 	private final File mEightMPFile
 			= new File(Environment.getExternalStorageDirectory() + "/c-sdkapp_8mp.jpg");
 
-	/*
+	/* --------------------------------------------------------------------------------------------
+	 *
 	 * Components in layout file.
+	 *
+	 * --------------------------------------------------------------------------------------------
 	 */
 	private PreviewFrameLayout mPreviewFrameLayout;
 	private DrawingView mDrawingView;
@@ -118,14 +121,24 @@ public class FaceActivity
 	 */
 	private boolean mIsCameraConfigured = false;
 
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * Callbacks.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
+
 	/* This callback is invoked after camera finishes taking a picture. */
 	private Camera.PictureCallback mOnPictureTakenCallback = new Camera.PictureCallback() {
-		public void onPictureTaken(byte[] data, Camera cam) {
+		public void
+		onPictureTaken(byte[] data,
+					   Camera cam) {
+
 			/* Produce "camera shutter" sound so user knows that picture was captured. */
-			Beeper.getInstance().click();
+			Beeper.click(mContext);
 
 			/* Now that picture has been taken, turn off flash. */
-			setFlashMode(false);
+			setTorchEnable(false);
 
 			/* Camera is no longer in preview. */
 			mInPreview = false;
@@ -154,7 +167,10 @@ public class FaceActivity
 
 	/* This callback is invoked each time camera finishes auto-focusing. */
 	private Camera.AutoFocusCallback mAutoFocusCallback = new Camera.AutoFocusCallback() {
-		public void onAutoFocus(boolean autoFocusSuccess, Camera arg1) {
+		public void
+		onAutoFocus(boolean autoFocusSuccess,
+					Camera arg1) {
+
 			/* Remove previous status since auto-focus is now done. */
 			mStatusTextView.setText("");
 
@@ -167,14 +183,17 @@ public class FaceActivity
 		}
 	};
 
-	public static Context
-	getContext() {
-		return mContext;
-	}
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * Android activity lifecycle event methods.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
 
 	@Override
 	protected void
 	onCreate(Bundle savedInstanceState) {
+
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_face);
 
@@ -195,6 +214,7 @@ public class FaceActivity
 	@Override
 	protected void
 	onResume() {
+
 		super.onResume();
 
 		new Thread(() -> {
@@ -206,8 +226,8 @@ public class FaceActivity
 			}
 
 			runOnUiThread(() -> {
-				reset();
-				doPreview();
+				this.reset();
+				this.doPreview();
 			});
 		}).start();
 	}
@@ -216,19 +236,19 @@ public class FaceActivity
 	@Override
 	public void
 	onBackPressed() {
+
 		super.onBackPressed();
 
 		this.stopReleaseCamera();
-
-		finish();
+		this.finish();
 	}
 
 	/* This is required to stop camera preview every time activity loses focus. */
 	@Override
 	protected void
 	onPause() {
-		super.onPause();
 
+		super.onPause();
 		this.stopReleaseCamera();
 	}
 
@@ -236,17 +256,18 @@ public class FaceActivity
 	@Override
 	protected void
 	onStop() {
-		super.onStop();
 
+		super.onStop();
 		this.stopReleaseCamera();
 	}
 
+	/* This is required to stop camera every time application is killed.  */
 	@Override
 	protected void
 	onDestroy() {
-		super.onDestroy();
 
-		this.setFlashMode(false);
+		super.onDestroy();
+		this.setTorchEnable(false);
 
 		if (mCamera != null) {
 			if (mInPreview)
@@ -266,6 +287,13 @@ public class FaceActivity
 		this.surfaceDestroyed(mSurfaceHolder);
 	}
 
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * SurfaceHolder.Callback methods.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
+
 	@Override
 	public void
 	surfaceChanged(SurfaceHolder holder,
@@ -273,8 +301,8 @@ public class FaceActivity
 				   int width,
 				   int height) {
 
-		if (mCamera == null) {
-			Log.w(TAG, "Camera object is NULL, will not set up preview.");
+		if (null == mCamera) {
+			Log.w(TAG, "Camera object is null, will not set up preview.");
 			return;
 		}
 
@@ -290,7 +318,8 @@ public class FaceActivity
 	@Override
 	public void
 	surfaceDestroyed(SurfaceHolder holder) {
-		if (mCamera == null)
+
+		if (null == mCamera)
 			return;
 
 		if (mInPreview)
@@ -301,9 +330,17 @@ public class FaceActivity
 		mInPreview = false;
 	}
 
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * Layout initialization and configure.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
+
 	/* Initializes all layout file component objects. */
 	private void
 	initializeLayoutComponents() {
+
 		mPreviewFrameLayout = findViewById(R.id.preview_frame_layout);
 		mDrawingView = findViewById(R.id.drawing_view);
 		mScannedImageView = findViewById(R.id.scanned_imageview);
@@ -322,7 +359,7 @@ public class FaceActivity
 		this.setFlashButtonVisibility(true);
 
 		/* Only CredenceTAB family of device's support 8MP back camera resolution.  */
-		if (mDeviceFamily != CredenceTAB)
+		if (CredenceTAB != mDeviceFamily)
 			mEightMPCheckbox.setVisibility(View.GONE);
 
 		mPreviewFrameLayout.setVisibility(VISIBLE);
@@ -343,18 +380,26 @@ public class FaceActivity
 				doCapture();
 		});
 
-		mFlashOnButton.setOnClickListener((View v) -> this.setFlashMode(true));
-		mFlashOffButton.setOnClickListener((View v) -> this.setFlashMode(false));
+		mFlashOnButton.setOnClickListener((View v) -> this.setTorchEnable(true));
+		mFlashOffButton.setOnClickListener((View v) -> this.setTorchEnable(false));
 	}
+
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * Camera initialization, reset, close, etc.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
 
 	private void
 	initPreview() {
-		if (mCamera == null || mSurfaceHolder.getSurface() == null) {
-			Log.d(TAG, "Either camera or SurfaceHolder was null, skip initPreview()");
+
+		if (null == mCamera || null == mSurfaceHolder.getSurface()) {
+			Log.d(TAG, "Either camera or SurfaceHolder was null, skip initPreview().");
 			return;
 		}
 		if (mIsCameraConfigured) {
-			Log.d(TAG, "camera was already configured, no need now");
+			Log.d(TAG, "camera is already configured, no need to iniPreview().");
 			return;
 		}
 
@@ -419,8 +464,56 @@ public class FaceActivity
 		}
 	}
 
-	/* Tells camera to return preview frames in a certain width/height and aspect ratio. In this
-	 * case it is 320x240 frame sizes.
+	private void
+	startPreview() {
+
+		if (mIsCameraConfigured && null != mCamera) {
+			mStatusTextView.setText("");
+			mPreviewFrameLayout.setVisibility(VISIBLE);
+			mDrawingView.setVisibility(VISIBLE);
+			mScannedImageView.setVisibility(VISIBLE);
+
+			mCamera.startPreview();
+
+			mInPreview = true;
+			mCaptureButton.setText(getString(R.string.capture_label));
+			this.setCaptureButtonVisibility(true);
+		} else Log.w(TAG, "Camera not configured, aborting start preview.");
+	}
+
+	private void
+	doPreview() {
+
+		try {
+			/* If camera was not already opened, open it. */
+			if (null == mCamera) {
+				mCamera = Camera.open();
+
+				/* Tells camera to give us preview frames in these dimensions. */
+				this.setPreviewSize(P_WIDTH, P_HEIGHT, (double) P_WIDTH / P_HEIGHT);
+			}
+
+			if (null != mCamera) {
+				/* Tell camera where to draw frames to. */
+				mCamera.setPreviewDisplay(mSurfaceHolder);
+				/* Tell camera to invoke this callback on each frame. */
+				mCamera.setPreviewCallback(mCameraPreviewCallback);
+				/* Rotate preview frames to proper orientation based on DeviceType. */
+				this.setCameraPreviewDisplayOrientation();
+				/* Now we can tell camera to start preview frames. */
+				this.startPreview();
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "Failed to start camera preview: " + e.getLocalizedMessage());
+			if (null != mCamera)
+				mCamera.release();
+
+			mCamera = null;
+			mInPreview = false;
+		}
+	}
+
+	/* Tells camera to return preview frames in a certain width/height and aspect ratio.
 	 *
 	 * @param width Width of preview frames to send back.
 	 * @param height Height of preview frames to send back.
@@ -443,6 +536,7 @@ public class FaceActivity
 	 */
 	private void
 	setCameraPictureOrientation() {
+
 		Camera.Parameters parameters = mCamera.getParameters();
 
 		if (mDeviceType == Trident_1)
@@ -460,68 +554,24 @@ public class FaceActivity
 	 */
 	private void
 	setCameraPreviewDisplayOrientation() {
+
 		int orientation = 90;
 
 		/* For C-TAB, the BACK camera requires 0, but FRONT camera is 180. In this example FRONT
 		 * camera is not used, so that case was not programed in.
 		 */
-		if (mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo || mDeviceFamily == CredenceTAB)
-			orientation = 0;
+		if (mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo
+				|| mDeviceFamily == CredenceTAB) {
 
+			orientation = 0;
+		}
 		mCamera.setDisplayOrientation(orientation);
 	}
 
-	private void
-	startPreview() {
-		if (mIsCameraConfigured && mCamera != null) {
-			mStatusTextView.setText("");
-			mPreviewFrameLayout.setVisibility(VISIBLE);
-			mDrawingView.setVisibility(VISIBLE);
-			mScannedImageView.setVisibility(VISIBLE);
-
-			mCamera.startPreview();
-
-			mInPreview = true;
-			mCaptureButton.setText(getString(R.string.capture_label));
-			this.setCaptureButtonVisibility(true);
-		} else Log.w(TAG, "Camera not configured, aborting start preview.");
-	}
-
-	private void
-	doPreview() {
-		try {
-			/* If camera was not already opened, open it. */
-			if (mCamera == null) {
-				mCamera = Camera.open();
-
-				/* Tells camera to give us preview frames in these dimensions. */
-				this.setPreviewSize(P_WIDTH, P_HEIGHT, (double) P_WIDTH / P_HEIGHT);
-			}
-
-			if (mCamera != null) {
-				/* Tell camera where to draw frames to. */
-				mCamera.setPreviewDisplay(mSurfaceHolder);
-				/* Tell camera to invoke this callback on each frame. */
-				mCamera.setPreviewCallback(mCameraPreviewCallback);
-				/* Rotate preview frames to proper orientation based on DeviceType. */
-				this.setCameraPreviewDisplayOrientation();
-				/* Now we can tell camera to start preview frames. */
-				this.startPreview();
-			}
-		} catch (Exception e) {
-			Log.e(TAG, "Failed to start preview: " + e.getLocalizedMessage());
-			if (mCamera != null)
-				mCamera.release();
-
-			mCamera = null;
-			mInPreview = false;
-		}
-	}
-
 	/* Captures image, before capturing image it will set proper picture orientation. */
-	@SuppressLint("SetTextI18n")
 	private void
 	doCapture() {
+
 		this.setCameraPictureOrientation();
 
 		if (mCamera != null) {
@@ -537,13 +587,62 @@ public class FaceActivity
 		}
 	}
 
+	/* Sets camera flash.
+	 *
+	 * @param useFlash If true turns on flash, if false disables flash.
+	 */
+	private void
+	setTorchEnable(boolean useFlash) {
+
+		/* If camera object was destroyed, there is nothing to do. */
+		if (null == mCamera)
+			return;
+
+		/* Camera flash parameters do not work on TAB/TRIDENT devices. In order to use flash on
+		 * these devices you must use the Credence APIs.
+		 */
+		if (mDeviceFamily == CredenceTAB
+				|| mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo) {
+
+			mBiometricsManager.cameraTorchEnable(useFlash);
+		} else {
+			try {
+				Camera.Parameters p = mCamera.getParameters();
+				p.setFlashMode(useFlash ? FLASH_MODE_TORCH : FLASH_MODE_OFF);
+				mCamera.setParameters(p);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/* Resets camera flash and UI back to camera preview state. */
+	private void
+	reset() {
+
+		/* This method is called before we start a camera preview, so we update global variable. */
+		mInPreview = true;
+
+		/* Change capture button image to "Capture". */
+		mCaptureButton.setText(getString(R.string.capture_label));
+
+		/* Turn off flash since new preview. */
+		this.setTorchEnable(false);
+
+		/* Display all buttons in their proper states. */
+		this.setCaptureButtonVisibility(true);
+		this.setFlashButtonVisibility(true);
+	}
+
+	/* Stops camera preview, turns off torch, releases camera object, and sets it to null. */
 	private void
 	stopReleaseCamera() {
-		if (mCamera != null) {
+
+		if (null != mCamera) {
 			/* Tell camera to no longer invoke callback on each preview frame. */
 			mCamera.setPreviewCallback(null);
 			/* Turn off flash. */
-			this.setFlashMode(false);
+			this.setTorchEnable(false);
 
 			/* Stop camera preview. */
 			if (mInPreview)
@@ -561,6 +660,13 @@ public class FaceActivity
 		this.surfaceDestroyed(mSurfaceHolder);
 	}
 
+	/* --------------------------------------------------------------------------------------------
+	 *
+	 * Private helpers.
+	 *
+	 * --------------------------------------------------------------------------------------------
+	 */
+
 	/* This method either hides or shows capture button allowing user to capture an image. This is
 	 * required because while camera is focusing user should not be allowed to press capture. Once
 	 * focusing finishes and a clear preview is available, only then should an image be allowed to
@@ -570,6 +676,7 @@ public class FaceActivity
 	 */
 	private void
 	setCaptureButtonVisibility(boolean visibility) {
+
 		mCaptureButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
 	}
 
@@ -583,53 +690,9 @@ public class FaceActivity
 	@SuppressWarnings("SameParameterValue")
 	private void
 	setFlashButtonVisibility(boolean visibility) {
+
 		mFlashOnButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
 		mFlashOffButton.setVisibility(visibility ? VISIBLE : INVISIBLE);
-	}
-
-	/* Sets camera flash.
-	 *
-	 * @param useFlash If true turns on flash, if false disables flash.
-	 */
-	private void
-	setFlashMode(boolean useFlash) {
-		/* If camera object was destroyed, there is nothing to do. */
-		if (mCamera == null)
-			return;
-
-		/* Camera flash parameters do not work on TAB/TRIDENT devices. In order to use flash on
-		 * these devices you must use the Credence APIs.
-		 */
-		if (mDeviceFamily == CredenceTAB || mDeviceFamily == TridentOne || mDeviceFamily == TridentTwo)
-			mBiometricsManager.cameraFlashControl(useFlash);
-		else {
-			try {
-				Camera.Parameters p = mCamera.getParameters();
-				p.setFlashMode(useFlash ? FLASH_MODE_TORCH : FLASH_MODE_OFF);
-				mCamera.setParameters(p);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/* Resets camera flash and UI back to camera preview state. */
-	private void
-	reset() {
-		Log.d(TAG, "reset()");
-
-		/* This method is called before we start a camera preview, so we update global variable. */
-		mInPreview = true;
-
-		/* Change capture button image to "Capture". */
-		mCaptureButton.setText(getString(R.string.capture_label));
-
-		/* Turn off flash since new preview. */
-		this.setFlashMode(false);
-
-		/* Display all buttons in their proper states. */
-		this.setCaptureButtonVisibility(true);
-		this.setFlashButtonVisibility(true);
 	}
 
 	/* Attempts to perform tap-to-focus on camera with given focus region.
@@ -639,6 +702,7 @@ public class FaceActivity
 	@SuppressLint("SetTextI18n")
 	public void
 	performTapToFocus(final Rect touchRect) {
+
 		if (!mInPreview)
 			return;
 
@@ -685,10 +749,11 @@ public class FaceActivity
 	 */
 	private void
 	detectFace(byte[] bitmapBytes) {
+
 		/* If camera was closed, immediately after a preview callback exit out, this is to prevent
 		 * NULL pointer exceptions when using the camera object later on.
 		 */
-		if (mCamera == null || bitmapBytes == null)
+		if (null == mCamera || null == bitmapBytes)
 			return;
 
 		/* We need to stop camera preview callbacks from continuously being invoked while processing
@@ -728,13 +793,13 @@ public class FaceActivity
 			/* If camera was closed or preview stopped, immediately exit out. This is done so that
 			 * we do not continue to process invalid frames, or draw to NULL surfaces.
 			 */
-			if (mCamera == null || !mInPreview)
+			if (null == mCamera || !mInPreview)
 				return;
 
 			/* Tell camera to start preview callbacks again. */
 			mCamera.setPreviewCallback(mCameraPreviewCallback);
 
-			if (resultCode == Biometrics.ResultCode.OK) {
+			if (resultCode == OK) {
 				/* Tell view that it will need to draw a detected face's Rect. region. */
 				mDrawingView.setHasFace(true);
 
@@ -767,6 +832,7 @@ public class FaceActivity
 	@SuppressWarnings("StringConcatenationInLoop")
 	private void
 	analyzeImage(final Bitmap bitmap) {
+
 		if (null == bitmap)
 			return;
 
@@ -781,22 +847,23 @@ public class FaceActivity
 		alertDialog.show();
 
 		/* Make API call to run full face analysis. */
-		mBiometricsManager.analyzeFaceImage(bitmap, (Biometrics.ResultCode resultCode,
-													 RectF rectF,
-													 ArrayList<PointF> arrayList,
-													 ArrayList<PointF> arrayList1,
-													 float[] floats,
-													 HeadPoseDirection[] poseDirections,
-													 Gender gender,
-													 int age,
-													 Emotion emotion,
-													 boolean glasses,
-													 int imageQuality) -> {
+		mBiometricsManager.analyzeFace(bitmap, (Biometrics.ResultCode resultCode,
+												RectF rectF,
+												ArrayList<PointF> arrayList,
+												ArrayList<PointF> arrayList1,
+												float[] floats,
+												HeadPoseDirection[] poseDirections,
+												Gender gender,
+												int age,
+												Emotion emotion,
+												boolean glasses,
+												int imageQuality) -> {
+
+			/* This API will never return ResultCode.INTERMEDIATE. */
 
 			if (FAIL == resultCode)
 				builder.setMessage(getString(R.string.face_engine_fail));
-			else {
-
+			else if (OK == resultCode) {
 				String displayData = "HeadPose: ";
 				for (HeadPoseDirection pose : poseDirections)
 					displayData += (pose.name() + " ");
@@ -811,18 +878,15 @@ public class FaceActivity
 
 			/* Remove popup, update its message with result from API call, and re-display. */
 			alertDialog.dismiss();
-			builder.setPositiveButton("OK", (DialogInterface dialog,
-											 int which) -> {
-			});
-			builder.create().show();
+			(builder.setPositiveButton("OK", null)).create().show();
 		});
 	}
 
 	/* Saves a given image (in byte array format) to disk. If image is to be saved as 8MP then
 	 * image is scaled to match appropriate resolution.
 	 *
-	 * @param rawData Image in byte array format to be saved.
-	 * @param isEightMP If true image is saved with 8MP dimensions, else default dimensions.
+	 * @param rawData,Image in byte array format to be saved.
+	 * @param isEightMP, If true image is saved with 8MP dimensions, else default dimensions.
 	 */
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void
@@ -856,6 +920,11 @@ public class FaceActivity
 		}).start();
 	}
 
+	/* Saves a given Bitmap image  to disk.
+	 *
+	 * @param bitmap, Image to save.
+	 * @param imagePath, File location where image will be saved.
+	 */
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private boolean
 	saveImage(Bitmap bitmap,
@@ -868,7 +937,7 @@ public class FaceActivity
 			imagePath.delete();
 
 		try (OutputStream outputStream = new FileOutputStream(imagePath)) {
-			bitmap.compress(Bitmap.CompressFormat.JPEG, COMPRESSION_QUALITY, outputStream);
+			bitmap.compress(Bitmap.CompressFormat.PNG, COMPRESSION_QUALITY, outputStream);
 			outputStream.flush();
 
 			return true;

@@ -14,4 +14,9 @@
 	<string name="face_engine_analytics_title">Face Engine Analytics</string>
 	<string name="face_engine_analyzing_wait">Analyzing image, please wait…</string>
 	<string name="face_engine_fail">Failed to run face analysis. Please re-capture image.</string>
+
+	<string name="permission_denied_text">Without all permissions the app may not function properly and will shutdown.
+        Are you sure you want to deny this permission?</string>
+	<string name="dialog_retry">No</string>
+	<string name="dialog_sure">Yes</string>
 </resources>
