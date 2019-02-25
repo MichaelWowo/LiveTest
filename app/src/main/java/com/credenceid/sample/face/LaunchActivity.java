@@ -155,7 +155,7 @@ public class LaunchActivity
 			/* This API will never return ResultCode.INTERMEDIATE. */
 
 			if (OK == resultCode) {
-				Toast.makeText(this, "Biometrics initialized.", LENGTH_SHORT).show();
+				Toast.makeText(this, getString(R.string.biometrics_initialized), LENGTH_SHORT).show();
 
 				mDeviceFamily = mBiometricsManager.getDeviceFamily();
 				mDeviceType = mBiometricsManager.getDeviceType();
@@ -166,7 +166,7 @@ public class LaunchActivity
 				startActivity(intent);
 				this.finish();
 			} else if (FAIL == resultCode)
-				Toast.makeText(this, "Biometrics FAILED to initialize.", LENGTH_LONG).show();
+				Toast.makeText(this, getString(R.string.biometrics_fail_init), LENGTH_LONG).show();
 		});
 	}
 
