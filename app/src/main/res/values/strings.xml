@@ -18,8 +18,21 @@
 	<string name="face_engine_analyzing_wait">Analyzing image, please wait…</string>
 	<string name="face_engine_fail">Failed to run face analysis. Please re-capture image.</string>
 
-	<string name="permission_denied_text">Without all permissions the app may not function properly and will shutdown.
+	<string name="permission_denied">Without all permissions app will not function properly and will shutdown.
         Are you sure you want to deny this permission?</string>
+	<string name="ok">OK</string>
+	<string name="cancel">Cancel</string>
 	<string name="dialog_retry">No</string>
 	<string name="dialog_sure">Yes</string>
+
+	<string name="no_image_found_to_process">No image found to process.</string>
+	<string name="camera_image">camera_image</string>
+	<string name="processing">Processing…</string>
+	<string name="gender_colon_arg">Gender:\u0020</string>
+	<string name="age_colon_arg">Age:\u0020</string>
+	<string name="glasses_colon_arg">Glasses:\u0020</string>
+	<string name="emotiona_colon_arg">Emotion:\u0020</string>
+	<string name="imagequal_colon_arg">Quality:\u0020</string>
+	<string name="headposedir_colon_arg">Looking:\u0020</string>
+
 </resources>

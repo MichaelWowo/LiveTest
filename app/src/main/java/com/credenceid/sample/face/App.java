@@ -11,6 +11,7 @@ import com.credenceid.biometrics.DeviceType;
 public class App
         extends Application {
 
+    public static final String TAG = "Credence ID SampleFace";
     /* CredenceSDK biometrics object used to interface with APIs. */
     public static BiometricsManager BioManager;
     /* Stores which Credence family of device's this app is running on. */

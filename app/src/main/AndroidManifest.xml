@@ -25,6 +25,12 @@
 			</intent-filter>
 		</activity>
 
+		<activity android:name=".CameraActivity">
+			<intent-filter>
+				<action android:name="android.intent.action.DEFAULT" />
+			</intent-filter>
+		</activity>
+
 		<activity android:name=".FaceActivity">
 			<intent-filter>
 				<action android:name="android.intent.action.DEFAULT" />
@@ -32,5 +38,4 @@
 		</activity>
 
 	</application>
-
 </manifest>
