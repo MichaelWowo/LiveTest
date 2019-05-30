@@ -5,12 +5,19 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
+    <ImageView
+        android:id="@+id/face_imageview"
+        android:layout_width="640dp"
+        android:layout_height="480dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        tools:ignore="ContentDescription" />
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_centerVertical="true"
-        android:layout_marginStart="20dp"
+        android:layout_below="@id/face_imageview"
+        android:layout_margin="20dp"
         android:orientation="vertical">
 
         <TextView
@@ -25,7 +32,7 @@
             android:id="@+id/age_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:fontFamily="sans-serif"
             android:textColor="@color/black"
             android:textSize="20sp" />
@@ -34,7 +41,7 @@
             android:id="@+id/glasses_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:fontFamily="sans-serif"
             android:textColor="@color/black"
             android:textSize="20sp" />
@@ -43,7 +50,7 @@
             android:id="@+id/pose_dir_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:fontFamily="sans-serif"
             android:textColor="@color/black"
             android:textSize="20sp" />
@@ -52,7 +59,7 @@
             android:id="@+id/emotion_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:fontFamily="sans-serif"
             android:textColor="@color/black"
             android:textSize="20sp" />
@@ -61,20 +68,12 @@
             android:id="@+id/image_quality_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="5dp"
             android:fontFamily="sans-serif"
             android:textColor="@color/black"
             android:textSize="20sp" />
 
     </LinearLayout>
-
-    <ImageView
-        android:id="@+id/face_imageview"
-        android:layout_width="640dp"
-        android:layout_height="480dp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="100dp"
-        tools:ignore="ContentDescription" />
 
     <Button
         android:id="@+id/recapture_button"
