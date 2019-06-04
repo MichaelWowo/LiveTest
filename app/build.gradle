@@ -9,12 +9,33 @@ android {
         versionCode 1
         versionName "2.0.0000"
     }
-    buildTypes {
+
+    signingConfigs {
+        debug {
+        }
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            keyAlias 'CredenceIDPublicKey'
+            keyPassword 'CredenceID'
+            storeFile file('../../CredencePublicKeys/PublicKey.jks')
+            storePassword 'CredenceID'
         }
     }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+            debuggable false
+            jniDebuggable false
+            renderscriptDebuggable false
+            zipAlignEnabled true
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
     buildToolsVersion '28.0.3'
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
