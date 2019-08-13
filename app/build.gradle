@@ -7,11 +7,16 @@ android {
         minSdkVersion 18
         targetSdkVersion 28
         versionCode 1
-        versionName "2.1.0"
+        versionName "2.2.0.1"
+        archivesBaseName = "C-Face"
     }
 
     signingConfigs {
         debug {
+            keyAlias 'CredenceIDPublicKey'
+            keyPassword 'CredenceID'
+            storeFile file('../../CredencePublicKeys/PublicKey.jks')
+            storePassword 'CredenceID'
         }
         release {
             keyAlias 'CredenceIDPublicKey'
@@ -24,6 +29,7 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled false
