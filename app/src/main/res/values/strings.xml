@@ -1,8 +1,8 @@
 <resources>
 	<string name="app_name">SampleFace</string>
 
-	<string name="biometrics_initialized">Biometrics initialized.</string>
-	<string name="biometrics_fail_init">Biometrics FAILED to initialize.</string>
+	<string name="bio_init">Biometrics initialized.</string>
+	<string name="bio_init_fail">Biometrics FAILED to initialize.</string>
 
 	<string name="flash_on_label">Flash On</string>
 	<string name="flash_off_label">Flash Off</string>
