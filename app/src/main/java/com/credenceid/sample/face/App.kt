@@ -23,5 +23,7 @@ class App : Application() {
          * Stores which specific device this app is running on.
          */
         var DevType = DeviceType.InvalidDevice
+
+
     }
 }

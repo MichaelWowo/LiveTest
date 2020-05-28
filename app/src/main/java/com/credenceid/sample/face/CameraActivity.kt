@@ -9,6 +9,9 @@ import android.hardware.Camera
 import android.hardware.Camera.Parameters.FLASH_MODE_OFF
 import android.hardware.Camera.Parameters.FLASH_MODE_TORCH
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.os.Environment
+import android.support.design.widget.Snackbar
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.View
@@ -22,8 +25,7 @@ import com.credenceid.biometrics.DeviceFamily.*
 import com.credenceid.face.FaceEngine
 import com.credenceid.face.FaceEngine.*
 import kotlinx.android.synthetic.main.act_camera.*
-import java.io.ByteArrayOutputStream
-import java.io.IOException
+import java.io.*
 import java.util.*
 
 private val TAG = CameraActivity::class.java.simpleName
@@ -56,6 +58,12 @@ private var inPreview = false
  */
 private var mIsCameraConfigured = false
 private var surfaceHolder: SurfaceHolder? = null
+
+
+private var sIsrecording = false
+private var mImageStream = arrayOfNulls<Bitmap>(100)
+private var imageCounter = 0
+var mRecordingTimer: CountDownTimer? = null
 
 @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
 class CameraActivity : Activity(), SurfaceHolder.Callback {
@@ -200,6 +208,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         previewFrameLayout.visibility = VISIBLE
         drawingView.visibility = VISIBLE
         scanImageView.visibility = VISIBLE
+        progressBar.visibility = INVISIBLE
 
         surfaceHolder = scanImageView.holder
         surfaceHolder!!.addCallback(this)
@@ -215,8 +224,101 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
                 doCapture()
         }
 
+        captureLivenessBtn.setOnClickListener{
+            //new InitializationTask().execute();
+            if(!sIsrecording){
+                sIsrecording = true;
+                mRecordingTimer = object: CountDownTimer(15000, 1000) {
+                    override fun onTick(millisUntilFinished: Long) {}
+
+                    override fun onFinish() {
+                        Log.d(TAG, "Timer Finished")
+                        statusTextView.text = getString(R.string.stop_recoding_timeout)
+                        sIsrecording = false
+                        performFaceCreateTemplateWithLiveness()
+                    }
+                }
+                Log.d(TAG, "Start recording")
+                statusTextView.text = getString(R.string.start_recoding) + "\n" + getString(R.string.start_recoding_instruction)
+                (mRecordingTimer as CountDownTimer).start()
+            }else{
+                mRecordingTimer?.cancel()
+                sIsrecording = false
+                imageCounter = 0
+                Log.d(TAG, "stop recording (User)")
+                statusTextView.text = getString(R.string.stop_recoding_user)
+            }
+        }
+
         flashOnBtn.setOnClickListener { this.setTorchEnable(true) }
         flashOffBtn.setOnClickListener { this.setTorchEnable(false) }
+    }
+
+    private fun recordStream(img: Bitmap){
+        if(sIsrecording){
+            if(imageCounter < 100) {
+                mImageStream[imageCounter] = img;
+                imageCounter++;
+            } else {
+                sIsrecording = false;
+                imageCounter=0
+                mRecordingTimer?.cancel();
+                statusTextView.text = getString(R.string.stop_recoding_completed)
+                performFaceCreateTemplateWithLiveness();
+            }
+        }
+    }
+
+    private fun performFaceCreateTemplateWithLiveness(){
+        Log.d(TAG, "Image stream length = " + imageCounter);
+
+        val sd_main = File(Environment.getExternalStorageDirectory().toString() + "/FaceSamples/")
+        var success = true
+        if (!sd_main.exists())
+            success = sd_main.mkdir()
+
+        if (success) {
+
+
+            for (x in 0 until imageCounter) {
+
+                // directory exists or already created
+                var outputFile: File? = File(sd_main, "face-image-from-camera-$x.jpg")
+                if (x < 10) {
+                    outputFile = File(sd_main, "face-image-from-camera-0$x.jpg")
+                }
+                try{
+                    // Compress the bitmap and save in jpg format
+                    val stream: OutputStream = FileOutputStream(outputFile)
+                    mImageStream[x]?.compress(Bitmap.CompressFormat.JPEG,100,stream)
+                    stream.flush()
+                    stream.close()
+                }catch (e:IOException){
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        statusTextView.text = statusTextView.text.toString() + "\n" + getString(R.string.template_creation_start)
+        progressBar.setVisibility(View.VISIBLE)
+
+        App.BioManager!!.createFaceTemplateWithLivenessDetection(mImageStream){ rc: Biometrics.ResultCode,
+                                                                                template ->
+            /* If we got back data, populate CropView and other widgets with face data. */
+            when (rc) {
+                OK -> {
+                    statusTextView.text = getString(R.string.template_result_success)
+                    progressBar.setVisibility(View.INVISIBLE)
+                }
+                INTERMEDIATE -> {
+                    /* This code is never returned for this API. */
+                }
+                FAIL -> {
+                    statusTextView.text = getString(R.string.template_result_failed)
+                    progressBar.setVisibility(View.INVISIBLE)
+                }
+            }
+        }
     }
 
     private fun initPreview() {
@@ -242,6 +344,8 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         /* Get camera parameters. We will edit these, then write them back to camera. */
         val parameters = camera!!.parameters
+
+        Log.d(App.TAG, "Camera Parameters : " + parameters.flatten())
 
         /* Enable auto-focus if available. */
         val focusModes = parameters.supportedFocusModes
@@ -631,47 +735,58 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         if (CredenceTwo == App.DevFamily)
             bm = Utils.rotateBitmap(bm, 90f)
 
-        /* Detect face on finalized Bitmap image. */
-        App.BioManager!!.detectFace(bm) { rc: Biometrics.ResultCode,
-                                          rectF: RectF? ->
+        recordStream(bm);
 
-            /* If camera was closed or preview stopped, immediately exit out. This is done so that
+        /* If camera was closed or preview stopped, immediately exit out. This is done so that
              * we do not continue to process invalid frames, or draw to NULL surfaces.
              */
             if (null == camera || !inPreview)
-                return@detectFace
+                return
 
             /* Tell camera to start preview callbacks again. */
             camera!!.setPreviewCallback(mCameraPreviewCallback)
 
-            when (rc) {
-                OK -> {
-                    whenNotNull(rectF) {
-                        /* Tell view that it will need to draw a detected face's Rect. region. */
-                        drawingView.setHasFace(true)
-
-                        /* If CredenceTWO then bounding Rect needs to be scaled to properly fit. */
-                        if (CredenceTwo == App.DevFamily) {
-                            drawingView.setFaceRect(rectF!!.left + 40, rectF.top - 25,
-                                    rectF.right + 40, rectF.bottom - 50)
-                        } else {
-                            drawingView.setFaceRect(rectF!!.left, rectF.top,
-                                    rectF.right, rectF.bottom)
-                        }
-                    }
-                }
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> {
-                    /* Tell view to not draw face Rect. region on next "onDraw()" call. */
-                    drawingView.setHasFace(false)
-                }
-            }
-
-            /* Tell view to invoke an "onDraw()". */
-            drawingView.invalidate()
-        }
+        /* Detect face on finalized Bitmap image. */
+//        App.BioManager!!.detectFace(bm) { rc: Biometrics.ResultCode,
+//                                          rectF: RectF? ->
+//
+//            /* If camera was closed or preview stopped, immediately exit out. This is done so that
+//             * we do not continue to process invalid frames, or draw to NULL surfaces.
+//             */
+//            if (null == camera || !inPreview)
+//                return@detectFace
+//
+//            /* Tell camera to start preview callbacks again. */
+//            camera!!.setPreviewCallback(mCameraPreviewCallback)
+//
+//            when (rc) {
+//                OK -> {
+//                    whenNotNull(rectF) {
+//                        /* Tell view that it will need to draw a detected face's Rect. region. */
+//                        drawingView.setHasFace(true)
+//
+//                        /* If CredenceTWO then bounding Rect needs to be scaled to properly fit. */
+//                        if (CredenceTwo == App.DevFamily) {
+//                            drawingView.setFaceRect(rectF!!.left + 40, rectF.top - 25,
+//                                    rectF.right + 40, rectF.bottom - 50)
+//                        } else {
+//                            drawingView.setFaceRect(rectF!!.left, rectF.top,
+//                                    rectF.right, rectF.bottom)
+//                        }
+//                    }
+//                }
+//                INTERMEDIATE -> {
+//                    /* This code is never returned for this API. */
+//                }
+//                FAIL -> {
+//                    /* Tell view to not draw face Rect. region on next "onDraw()" call. */
+//                    drawingView.setHasFace(false)
+//                }
+//            }
+//
+//            /* Tell view to invoke an "onDraw()". */
+//            drawingView.invalidate()
+//        }
     }
 
     /**

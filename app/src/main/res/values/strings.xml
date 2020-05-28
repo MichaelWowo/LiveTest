@@ -7,12 +7,21 @@
 	<string name="flash_on_label">Flash On</string>
 	<string name="flash_off_label">Flash Off</string>
 	<string name="capture_label">Capture</string>
+	<string name="capture_with_liveness_label">Capture with Liveness</string>
 	<string name="recapture_label">Re-Capture</string>
 
 	<string name="face_8mp_checkbox_label">8 Mepapixels</string>
 
 	<string name="start_capture_hold_still">Starting capture, hold still…</string>
 	<string name="autofocus_wait">Auto-focusing, please wait…</string>
+	<string name="start_recoding">Start recording</string>
+	<string name="start_recoding_instruction">Rotate face</string>
+	<string name="stop_recoding_completed">Stop recording (Completed)</string>
+	<string name="stop_recoding_user">Stop recording (User)</string>
+	<string name="stop_recoding_timeout">Stop recording (Timeout)</string>
+	<string name="template_creation_start">Template creation started</string>
+	<string name="template_result_success">Template creation success</string>
+	<string name="template_result_failed">Template creation failed</string>
 
 	<string name="face_engine_analytics_title">Face Engine Analytics</string>
 	<string name="face_engine_analyzing_wait">Analyzing image, please wait…</string>

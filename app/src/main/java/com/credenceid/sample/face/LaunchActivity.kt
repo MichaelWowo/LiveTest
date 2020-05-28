@@ -1,4 +1,4 @@
-package com.credenceid.sample.face
+    package com.credenceid.sample.face
 
 import android.Manifest.permission.CAMERA
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE

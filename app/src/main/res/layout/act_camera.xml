@@ -5,7 +5,8 @@
 	android:layout_gravity="center"
 	android:background="@color/background"
 	android:gravity="center"
-	android:orientation="vertical">
+	android:orientation="vertical"
+	android:id="@+id/camera_layout">
 
 	<TextView
 		android:id="@+id/statusTextView"
@@ -15,6 +16,15 @@
 		android:textColor="#FF0000"
 		android:layout_marginTop="20dp"
 		android:textSize="20sp" />
+
+	<ProgressBar
+		android:id="@+id/progressBar"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:minHeight="50dp"
+		android:minWidth="50dp"
+		android:layout_alignParentRight="true"
+		android:layout_marginTop="20dp"/>
 
 	<!-- Responsible for camera preview and drawing surfaces. -->
 	<RelativeLayout
@@ -48,6 +58,30 @@
 			android:layout_centerHorizontal="true" />
 
 	</RelativeLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="true"
+		android:layout_marginBottom="70dp"
+		android:orientation="horizontal">
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/captureLivenessBtn"
+			style="@style/FaceActivityButton"
+			android:text="@string/capture_with_liveness_label"
+			android:textSize="20sp" />
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+	</LinearLayout>
 
 	<LinearLayout
 		android:layout_width="match_parent"
