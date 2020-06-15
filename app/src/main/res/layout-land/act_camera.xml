@@ -79,6 +79,40 @@
 			android:text="@string/capture_label"
 			android:textSize="20sp" />
 
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/startLivenessBtn"
+			style="@style/FaceActivityButton"
+			android:text="start"
+			android:textSize="20sp" />
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/captureLivenessBtn"
+			style="@style/FaceActivityButton"
+			android:text="@string/capture_with_liveness_label"
+			android:textSize="20sp" />
+
+		<View
+			android:layout_width="0dp"
+			android:layout_height="0dp"
+			android:layout_weight="1" />
+
+		<Button
+			android:id="@+id/stopLivenessBtn"
+			style="@style/FaceActivityButton"
+			android:text="Stop"
+			android:textSize="20sp" />
+
 		<View
 			android:layout_width="0dp"
 			android:layout_height="0dp"

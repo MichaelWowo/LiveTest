@@ -8,6 +8,7 @@ import android.graphics.*
 import android.hardware.Camera
 import android.hardware.Camera.Parameters.FLASH_MODE_OFF
 import android.hardware.Camera.Parameters.FLASH_MODE_TORCH
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
@@ -26,6 +27,7 @@ import com.credenceid.face.FaceEngine
 import com.credenceid.face.FaceEngine.*
 import kotlinx.android.synthetic.main.act_camera.*
 import java.io.*
+import java.net.URI
 import java.util.*
 
 private val TAG = CameraActivity::class.java.simpleName
@@ -91,6 +93,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             Toast.makeText(this, "Unable to run face analysis, retry.", Toast.LENGTH_LONG).show()
         }
     }
+
 
     /**
      * This callback is invoked on each camera preview frame. In this callback will run call face
@@ -208,7 +211,8 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         previewFrameLayout.visibility = VISIBLE
         drawingView.visibility = VISIBLE
         scanImageView.visibility = VISIBLE
-        progressBar.visibility = INVISIBLE
+        if(null!=progressBar)
+            progressBar!!.visibility = INVISIBLE
 
         surfaceHolder = scanImageView.holder
         surfaceHolder!!.addCallback(this)
@@ -224,18 +228,31 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
                 doCapture()
         }
 
+        startLivenessBtn.setOnClickListener {
+            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+                statusTextView.text = "Start thread res = " + resultCode
+            }
+        }
+
+
+        stopLivenessBtn.setOnClickListener {
+            App.BioManager!!.stopThreadForFaceTemplateWithLiveness{ resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+                statusTextView.text = "Stop thread res = " + resultCode
+            }
+        }
+
         captureLivenessBtn.setOnClickListener{
             //new InitializationTask().execute();
             if(!sIsrecording){
                 sIsrecording = true;
-                mRecordingTimer = object: CountDownTimer(15000, 1000) {
+                mRecordingTimer = object: CountDownTimer(20000, 1000) {
                     override fun onTick(millisUntilFinished: Long) {}
 
                     override fun onFinish() {
                         Log.d(TAG, "Timer Finished")
                         statusTextView.text = getString(R.string.stop_recoding_timeout)
                         sIsrecording = false
-                        performFaceCreateTemplateWithLiveness()
+                        imageCounter = 0
                     }
                 }
                 Log.d(TAG, "Start recording")
@@ -254,72 +271,97 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         flashOffBtn.setOnClickListener { this.setTorchEnable(false) }
     }
 
-    private fun recordStream(img: Bitmap){
+    private fun sendImageToFaceEngine(img: Bitmap){
         if(sIsrecording){
-            if(imageCounter < 100) {
-                mImageStream[imageCounter] = img;
-                imageCounter++;
-            } else {
-                sIsrecording = false;
-                imageCounter=0
-                mRecordingTimer?.cancel();
-                statusTextView.text = getString(R.string.stop_recoding_completed)
-                performFaceCreateTemplateWithLiveness();
-            }
-        }
-    }
+            val sd_main = File(Environment.getExternalStorageDirectory().toString() + "/FaceSamples/")
+            var success = true
+            if (!sd_main.exists())
+                success = sd_main.mkdir()
 
-    private fun performFaceCreateTemplateWithLiveness(){
-        Log.d(TAG, "Image stream length = " + imageCounter);
-
-        val sd_main = File(Environment.getExternalStorageDirectory().toString() + "/FaceSamples/")
-        var success = true
-        if (!sd_main.exists())
-            success = sd_main.mkdir()
-
-        if (success) {
-
-
-            for (x in 0 until imageCounter) {
+            if (success) {
 
                 // directory exists or already created
-                var outputFile: File? = File(sd_main, "face-image-from-camera-$x.jpg")
-                if (x < 10) {
-                    outputFile = File(sd_main, "face-image-from-camera-0$x.jpg")
+                var outputFile: File? = File(sd_main, "face-image-from-camera-$imageCounter.jpg")
+                if (imageCounter < 100) {
+                    if (imageCounter < 10) {
+                        outputFile = File(sd_main, "face-image-from-camera-00$imageCounter.jpg")
+                    } else {
+                    outputFile = File(sd_main, "face-image-from-camera-0$imageCounter.jpg")
+                    }
                 }
+
                 try{
                     // Compress the bitmap and save in jpg format
                     val stream: OutputStream = FileOutputStream(outputFile)
-                    mImageStream[x]?.compress(Bitmap.CompressFormat.JPEG,100,stream)
+                    img?.compress(Bitmap.CompressFormat.JPEG,100,stream)
+                    if (outputFile != null) {
+                        Log.d(TAG, "Uri " + Uri.parse(outputFile.absolutePath) + " send to service")
+                        App!!.BioManager?.sendImageToThreadForFaceTemplateWithLiveness(Uri.parse(outputFile.absolutePath)) { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+                            statusTextView.text = "Send image to thread res = " + resultCode
+                        }
+                    }
                     stream.flush()
                     stream.close()
+                    imageCounter++
                 }catch (e:IOException){
                     e.printStackTrace()
                 }
             }
         }
-
-        statusTextView.text = statusTextView.text.toString() + "\n" + getString(R.string.template_creation_start)
-        progressBar.setVisibility(View.VISIBLE)
-
-        App.BioManager!!.createFaceTemplateWithLivenessDetection(mImageStream){ rc: Biometrics.ResultCode,
-                                                                                template ->
-            /* If we got back data, populate CropView and other widgets with face data. */
-            when (rc) {
-                OK -> {
-                    statusTextView.text = getString(R.string.template_result_success)
-                    progressBar.setVisibility(View.INVISIBLE)
-                }
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> {
-                    statusTextView.text = getString(R.string.template_result_failed)
-                    progressBar.setVisibility(View.INVISIBLE)
-                }
-            }
-        }
     }
+
+//    private fun performFaceCreateTemplateWithLiveness(){
+//        Log.d(TAG, "Image stream length = " + imageCounter);
+//
+//        val sd_main = File(Environment.getExternalStorageDirectory().toString() + "/FaceSamples/")
+//        var success = true
+//        if (!sd_main.exists())
+//            success = sd_main.mkdir()
+//
+//        if (success) {
+//
+//
+//            for (x in 0 until imageCounter) {
+//
+//                // directory exists or already created
+//                var outputFile: File? = File(sd_main, "face-image-from-camera-$x.jpg")
+//                if (x < 10) {
+//                    outputFile = File(sd_main, "face-image-from-camera-0$x.jpg")
+//                }
+//                try{
+//                    // Compress the bitmap and save in jpg format
+//                    val stream: OutputStream = FileOutputStream(outputFile)
+//                    mImageStream[x]?.compress(Bitmap.CompressFormat.JPEG,100,stream)
+//                    stream.flush()
+//                    stream.close()
+//                }catch (e:IOException){
+//                    e.printStackTrace()
+//                }
+//            }
+//        }
+//
+//        statusTextView.text = statusTextView.text.toString() + "\n" + getString(R.string.template_creation_start)
+//        progressBar.setVisibility(View.VISIBLE)
+//
+//        App.BioManager!!.createFaceTemplateWithLivenessDetection(mImageStream){ rc: Biometrics.ResultCode,
+//                                                                                template ->
+//            /* If we got back data, populate CropView and other widgets with face data. */
+//            when (rc) {
+//                OK -> {
+//                    statusTextView.text = getString(R.string.template_result_success)
+//                    progressBar.setVisibility(View.INVISIBLE)
+//                }
+//                INTERMEDIATE -> {
+//                    /* This code is never returned for this API. */
+//                }
+//                FAIL -> {
+//                    statusTextView.text = getString(R.string.template_result_failed)
+//                    progressBar.setVisibility(View.INVISIBLE)
+//                }
+//            }
+//        }
+//    }
+
 
     private fun initPreview() {
 
@@ -427,7 +469,10 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             /* If camera was not already opened, open it. */
             if (null == camera) {
                 Log.d(App.TAG, "Camera is null, opening camera.")
-                camera = Camera.open()
+                if(App!!.DevFamily.equals(CredenceTAB))
+                    camera = Camera.open(1)
+                else
+                    camera = Camera.open()
                 /* Tells camera to give us preview frames in these dimensions. */
                 this.setPreviewSize(P_WIDTH, P_HEIGHT, P_WIDTH.toDouble() / P_HEIGHT)
             }
@@ -488,7 +533,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         else if (App.DevFamily == TridentTwo)
             parameters.setRotation(180)
         else if (App.DevFamily == CredenceOne || App.DevFamily == CredenceTAB)
-            parameters.setRotation(0)
+            parameters.setRotation(180)
 
         camera!!.parameters = parameters
     }
@@ -507,7 +552,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         if (App.DevFamily == TridentOne || App.DevFamily == TridentTwo
                 || App.DevFamily == CredenceTAB) {
 
-            orientation = 0
+            orientation = 180
         }
         camera!!.setDisplayOrientation(orientation)
     }
@@ -735,7 +780,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         if (CredenceTwo == App.DevFamily)
             bm = Utils.rotateBitmap(bm, 90f)
 
-        recordStream(bm);
+        sendImageToFaceEngine(bm);
 
         /* If camera was closed or preview stopped, immediately exit out. This is done so that
              * we do not continue to process invalid frames, or draw to NULL surfaces.
