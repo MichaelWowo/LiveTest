@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Environment
-import android.support.design.widget.Snackbar
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.View
@@ -20,14 +19,8 @@ import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.widget.Toast
 import com.android.camera.Utils
-import com.credenceid.biometrics.Biometrics
-import com.credenceid.biometrics.Biometrics.ResultCode.*
-import com.credenceid.biometrics.DeviceFamily.*
-import com.credenceid.face.FaceEngine
-import com.credenceid.face.FaceEngine.*
 import kotlinx.android.synthetic.main.act_camera.*
 import java.io.*
-import java.net.URI
 import java.util.*
 
 private val TAG = CameraActivity::class.java.simpleName
@@ -66,6 +59,9 @@ private var sIsrecording = false
 private var mImageStream = arrayOfNulls<Bitmap>(100)
 private var imageCounter = 0
 var mRecordingTimer: CountDownTimer? = null
+
+private var mImageHandler: CredenceHandlerThread? = null
+
 
 @Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
 class CameraActivity : Activity(), SurfaceHolder.Callback {
@@ -205,8 +201,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         this.setFlashButtonVisibility(true)
 
         /* Only CredenceTAB family of device's support 8MP back camera resolution.  */
-        if (CredenceTAB != App.DevFamily)
-            eightMPCheckBox.visibility = View.GONE
 
         previewFrameLayout.visibility = VISIBLE
         drawingView.visibility = VISIBLE
@@ -229,16 +223,21 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         }
 
         startLivenessBtn.setOnClickListener {
-            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
-                statusTextView.text = "Start thread res = " + resultCode
-            }
+//            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+//                statusTextView.text = "Start thread res = " + resultCode
+//            }
+
+            mImageHandler = CredenceHandlerThread(applicationContext)
+            mImageHandler!!.start()
         }
 
 
         stopLivenessBtn.setOnClickListener {
-            App.BioManager!!.stopThreadForFaceTemplateWithLiveness{ resultCode: Biometrics.ResultCode, bytes: ByteArray ->
-                statusTextView.text = "Stop thread res = " + resultCode
-            }
+//            App.BioManager!!.stopThreadForFaceTemplateWithLiveness{ resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+//                statusTextView.text = "Stop thread res = " + resultCode
+//            }
+            mImageHandler!!.interrupt()
+            mImageHandler = null
         }
 
         captureLivenessBtn.setOnClickListener{
@@ -296,9 +295,12 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
                     img?.compress(Bitmap.CompressFormat.JPEG,100,stream)
                     if (outputFile != null) {
                         Log.d(TAG, "Uri " + Uri.parse(outputFile.absolutePath) + " send to service")
-                        App!!.BioManager?.sendImageToThreadForFaceTemplateWithLiveness(Uri.parse(outputFile.absolutePath)) { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
-                            statusTextView.text = "Send image to thread res = " + resultCode
-                        }
+//                        App!!.BioManager?.sendImageToThreadForFaceTemplateWithLiveness(Uri.parse(outputFile.absolutePath)) { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
+//                            statusTextView.text = "Send image to thread res = " + resultCode
+//                        }
+
+                        mImageHandler!!.handleImage( Uri.parse(outputFile.absolutePath))
+
                     }
                     stream.flush()
                     stream.close()
@@ -401,6 +403,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         val picSize = Utils.getLargestPictureSize(parameters)
         parameters.setPictureSize(picSize.width, picSize.height)
 
+
         /* Regardless of what size is returned we always use a 320x240 preview size for face
          * detection since it is extremely fast.
          *
@@ -410,22 +413,15 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         previewSize.width = P_WIDTH
         previewSize.height = P_HEIGHT
 
-        if (CredenceTwo == App.DevFamily) {
-            previewFrameLayout.layoutParams.width = (previewSize.height * 2.5).toInt()
-            previewFrameLayout.layoutParams.height = (previewSize.width * 2.5).toInt()
-        }
         previewFrameLayout.setAspectRatio(previewSize.width / previewSize.height.toDouble())
 
         val drawingViewLayoutParams = drawingView.layoutParams
 
-        if (CredenceTAB == App.DevFamily) {
-            drawingViewLayoutParams.width = (previewSize.width * 2.75).toInt()
-            drawingViewLayoutParams.height = (previewSize.height * 2.75).toInt()
-        } else {
-            val prevParams = previewFrameLayout.layoutParams
-            drawingViewLayoutParams.width = prevParams.width
-            drawingViewLayoutParams.height = prevParams.height
-        }
+
+        val prevParams = previewFrameLayout.layoutParams
+        drawingViewLayoutParams.width = prevParams.width
+        drawingViewLayoutParams.height = prevParams.height
+
         drawingView.layoutParams = drawingViewLayoutParams
 
         /* Need to set FaceEngine specific bitmap size so DrawingView knows
@@ -469,10 +465,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             /* If camera was not already opened, open it. */
             if (null == camera) {
                 Log.d(App.TAG, "Camera is null, opening camera.")
-                if(App!!.DevFamily.equals(CredenceTAB))
                     camera = Camera.open(1)
-                else
-                    camera = Camera.open()
                 /* Tells camera to give us preview frames in these dimensions. */
                 this.setPreviewSize(P_WIDTH, P_HEIGHT, P_WIDTH.toDouble() / P_HEIGHT)
             }
@@ -528,11 +521,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         val parameters = camera!!.parameters
 
-        if (App.DevFamily == TridentOne)
-            parameters.setRotation(270)
-        else if (App.DevFamily == TridentTwo)
-            parameters.setRotation(180)
-        else if (App.DevFamily == CredenceOne || App.DevFamily == CredenceTAB)
             parameters.setRotation(180)
 
         camera!!.parameters = parameters
@@ -549,11 +537,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         /* For C-TAB, the BACK camera requires 0, but FRONT camera is 180. In this example FRONT
          * camera is not used, so that case was not programed in.
          */
-        if (App.DevFamily == TridentOne || App.DevFamily == TridentTwo
-                || App.DevFamily == CredenceTAB) {
-
-            orientation = 180
-        }
         camera!!.setDisplayOrientation(orientation)
     }
 
@@ -591,17 +574,13 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         /* Camera flash parameters do not work on TAB/TRIDENT devices. In order to use flash on
          * these devices you must use the Credence APIs.
          */
-        if (App.DevFamily == CredenceTAB || App.DevFamily == TridentOne || App.DevFamily == TridentTwo) {
-            App.BioManager!!.cameraTorchEnable(useFlash)
-        } else {
-            try {
-                val p = camera!!.parameters
-                p.flashMode = if (useFlash) FLASH_MODE_TORCH else FLASH_MODE_OFF
-                camera!!.parameters = p
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
 
+        try {
+            val p = camera!!.parameters
+            p.flashMode = if (useFlash) FLASH_MODE_TORCH else FLASH_MODE_OFF
+            camera!!.parameters = p
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -714,14 +693,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
          */
         focusList.add(Camera.Area(targetFocusRect, 1000))
 
-        /* For certain device auto-focus parameters need to be explicitly setup. */
-        if (App.DevFamily == CredenceOne) {
-            val para = camera!!.parameters
-            para.focusMode = Camera.Parameters.FOCUS_MODE_AUTO
-            para.focusAreas = focusList
-            para.meteringAreas = focusList
-            camera!!.parameters = para
-        }
 
         /* Call camera AutoFocus and pass callback to be called when auto focus finishes */
         camera!!.autoFocus(mAutoFocusCallback)
@@ -774,11 +745,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         /* Save fixed color image as final good Bitmap. */
         var bm = BitmapFactory.decodeByteArray(outStream.toByteArray(), 0, outStream.size())
 
-        /* On CredenceTWO device's captured image is rotated by 270 degrees. To fix this rotate
-         * image by another 90 degrees to have it right-side-up.
-         */
-        if (CredenceTwo == App.DevFamily)
-            bm = Utils.rotateBitmap(bm, 90f)
 
         sendImageToFaceEngine(bm);
 
@@ -834,244 +800,4 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 //        }
     }
 
-    /**
-     * --------------------------------------------------------------------------------------------
-     *
-     * Methods demonstrating how to use Credence ID other fingerprint APIs. This methods are not
-     * used in this application, as they are only here for usage reference.
-     *
-     * --------------------------------------------------------------------------------------------
-     */
-
-    @Suppress("unused")
-    private fun detectFaceAsync(bitmapBytes: ByteArray,
-                                bitmapWidth: Int,
-                                bitmapHeight: Int) {
-
-        App.BioManager!!.detectFace(bitmapBytes, bitmapWidth, bitmapHeight) { rc, rectF ->
-            when (rc) {
-                OK -> Log.d(TAG, "detectFaceAsync(byte[], int, int): RectF: $rectF")
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> Log.d(TAG, "detectFaceAsync(byte[], int, int): Failed to find face.")
-            }
-        }
-    }
-
-    @Suppress("unused")
-    private fun analyzeFaceAsync(bitmapBytes: ByteArray,
-                                 bitmapWidth: Int,
-                                 bitmapHeight: Int) {
-
-        App.BioManager!!.analyzeFace(bitmapBytes, bitmapWidth, bitmapHeight) { rc,
-                                                                               rectF,
-                                                                               _,
-                                                                               _,
-                                                                               _,
-                                                                               _,
-                                                                               gender,
-                                                                               age,
-                                                                               emotion,
-                                                                               hasGlasses,
-                                                                               imageQuality ->
-
-            when (rc) {
-                OK -> {
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): RectF: $rectF")
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): Gender: " + gender.name)
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): Age: $age")
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): Emotion: " + emotion.name)
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): Glasses: $hasGlasses")
-                    Log.d(TAG, "analyzeFaceAsync(byte[], int, int): ImageQuality: $imageQuality")
-                }
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> Log.d(TAG, "analyzeFaceAsync(byte[], int, int): Failed to find face.")
-            }
-        }
-    }
-
-    @Suppress("unused")
-    private fun createFaceTemplateAsync(bitmap: Bitmap) {
-
-        App.BioManager!!.createFaceTemplate(bitmap) { rc, _ ->
-
-            when (rc) {
-                OK -> Log.d(TAG, "createFaceTemplateAsync(Bitmap): Template created.")
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> Log.d(TAG, "createFaceTemplateAsync(Bitmap): Failed to create template.")
-            }
-        }
-    }
-
-    @Suppress("unused")
-    private fun createFaceTemplateAsync(bitmapBytes: ByteArray,
-                                        bitmapWidth: Int,
-                                        bitmapHeight: Int) {
-
-        App.BioManager!!.createFaceTemplate(bitmapBytes, bitmapWidth, bitmapHeight) { rc, _ ->
-
-            when (rc) {
-                OK -> Log.d(TAG, "createFaceTemplateAsync(byte[], int, int): PASS")
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> Log.d(TAG, "createFaceTemplateAsync(byte[], int, int): FAIL")
-            }
-        }
-    }
-
-    @Suppress("unused")
-    private fun matchFacesAsync(templateOne: ByteArray,
-                                templateTwo: ByteArray) {
-
-        App.BioManager!!.compareFace(templateOne, templateTwo) { rc, i ->
-            when (rc) {
-                OK -> Log.d(TAG, "matchFacesAsync(byte[], byte[]): Score = $i")
-                INTERMEDIATE -> {
-                    /* This code is never returned for this API. */
-                }
-                FAIL -> Log.d(TAG, "matchFacesAsync(byte[], byte[]): Failed to compare templates.")
-            }
-        }
-    }
-
-    @Suppress("unused")
-    private fun detectFaceSync(bitmap: Bitmap): RectF {
-
-        val res = App.BioManager!!.detectFaceSync(bitmap, syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) res.faceRect else RectF(0f, 0f, 0f, 0f)
-    }
-
-    @Suppress("unused")
-    private fun detectFaceSync(bitmapBytes: ByteArray,
-                               bitmapWidth: Int,
-                               bitmapHeight: Int): RectF {
-
-        val res = App.BioManager!!.detectFaceSync(bitmapBytes,
-                bitmapWidth,
-                bitmapHeight,
-                syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) res.faceRect else RectF(0f, 0f, 0f, 0f)
-    }
-
-    @Suppress("unused")
-    private fun analyzeFaceSync(bitmap: Bitmap): FaceData {
-
-        val res = App.BioManager!!.analyzeFaceSync(bitmap, syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) {
-            FaceData(res.faceRect,
-                    res.landmark5,
-                    res.landmark68,
-                    res.headPoseEstimations,
-                    res.headPoseDirections,
-                    res.gender,
-                    res.dominantEmotion,
-                    res.age,
-                    res.hasGlasses,
-                    res.imageQuality)
-
-        } else FaceData()
-    }
-
-    @Suppress("unused")
-    private fun analyzeFaceSync(bitmapBytes: ByteArray,
-                                bitmapWidth: Int,
-                                bitmapHeight: Int): FaceData {
-
-        val res = App.BioManager!!.analyzeFaceSync(bitmapBytes,
-                bitmapWidth,
-                bitmapHeight,
-                syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) {
-            FaceData(res.faceRect,
-                    res.landmark5,
-                    res.landmark68,
-                    res.headPoseEstimations,
-                    res.headPoseDirections,
-                    res.gender,
-                    res.dominantEmotion,
-                    res.age,
-                    res.hasGlasses,
-                    res.imageQuality)
-
-        } else FaceData()
-    }
-
-    @Suppress("unused")
-    private fun createFaceTemplateSync(bitmap: Bitmap): ByteArray {
-
-        val res = App.BioManager!!.createFaceTemplateSync(bitmap, syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) res.template else byteArrayOf()
-    }
-
-    @Suppress("unused")
-    private fun createFaceTemplateSync(bitmapBytes: ByteArray,
-                                       bitmapWidth: Int,
-                                       bitmapHeight: Int): ByteArray {
-
-        val res = App.BioManager!!.createFaceTemplateSync(bitmapBytes,
-                bitmapWidth,
-                bitmapHeight,
-                syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) res.template else byteArrayOf()
-    }
-
-    @Suppress("unused")
-    private fun matchFacesSync(templateOne: ByteArray,
-                               templateTwo: ByteArray): Int {
-
-        val res = App.BioManager!!.compareFaceSync(templateOne, templateTwo, syncAPITimeoutMS)
-
-        return if (null != res && OK == res.resultCode) res.score else 0
-    }
-
-    private inner class FaceData {
-
-        var faceRect = RectF()
-        var landmark5: ArrayList<PointF> = ArrayList()
-        var landmark68: ArrayList<PointF> = ArrayList()
-        var poseEstimations = FloatArray(3)
-        var poseDirections: Array<HeadPoseDirection> = Array(3) { HeadPoseDirection.UNKNOWN }
-        var gender = FaceEngine.Gender.UNKNOWN
-        var age = -1
-        var emotion = FaceEngine.Emotion.UNKNOWN
-        var glasses = false
-        var quality = -1
-
-        constructor()
-
-        constructor(rect: RectF,
-                    landmark5: ArrayList<PointF>,
-                    landmark68: ArrayList<PointF>,
-                    pose: FloatArray,
-                    poseDirections: Array<HeadPoseDirection>,
-                    gender: Gender,
-                    emotion: Emotion,
-                    age: Int,
-                    glasses: Boolean,
-                    quality: Int) {
-
-            this.faceRect = rect
-            this.landmark5 = landmark5
-            this.landmark68 = landmark68
-            this.poseEstimations = pose
-            this.poseDirections = poseDirections
-            this.gender = gender
-            this.age = age
-            this.emotion = emotion
-            this.glasses = glasses
-            this.quality = quality
-        }
-    }
 }
