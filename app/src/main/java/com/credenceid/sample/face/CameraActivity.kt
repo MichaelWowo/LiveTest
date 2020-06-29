@@ -97,8 +97,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         drawingView.setHasTouch(false, Rect(0, 0, 0, 0))
         drawingView.invalidate()
 
-        /* Re-enable capture button. */
-        setCaptureButtonVisibility(true)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,8 +185,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
      */
     private fun configureLayoutComponents() {
 
-        this.setFlashButtonVisibility(true)
-
         /* Only CredenceTAB family of device's support 8MP back camera resolution.  */
 
         previewFrameLayout.visibility = VISIBLE
@@ -201,15 +197,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         surfaceHolder!!.addCallback(this)
         surfaceHolder!!.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS)
 
-        captureBtn.setOnClickListener { v: View ->
-            if (!inPreview) {
-                this.reset()
-                this.doPreview()
-
-                captureBtn.text = getString(R.string.capture_label)
-            } else if (camera != null)
-                doCapture()
-        }
 
         startLivenessBtn.setOnClickListener {
 //            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
@@ -254,8 +241,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             }
         }
 
-        flashOnBtn.setOnClickListener { this.setTorchEnable(true) }
-        flashOffBtn.setOnClickListener { this.setTorchEnable(false) }
     }
 
     private fun sendImageToFaceEngine(img: Bitmap){
@@ -422,8 +407,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             Log.d(App.TAG, "Camera is configured & valid.")
 
             statusTextView.text = ""
-            captureBtn.text = getString(R.string.capture_label)
-            this.setCaptureButtonVisibility(true)
 
             previewFrameLayout.visibility = VISIBLE
             drawingView.visibility = VISIBLE
@@ -528,7 +511,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         this.setCameraPictureOrientation()
 
         if (camera != null) {
-            this.setCaptureButtonVisibility(false)
             statusTextView.text = getString(R.string.start_capture_hold_still)
 
             /* We are no longer going to be in preview. Set variable BEFORE telling camera to take
@@ -570,15 +552,9 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         Log.d(App.TAG, "reset()")
 
-        /* Change capture button image to "Capture". */
-        captureBtn.text = getString(R.string.capture_label)
-
         /* Turn off flash since new preview. */
         this.setTorchEnable(false)
 
-        /* Display all buttons in their proper states. */
-        this.setCaptureButtonVisibility(true)
-        this.setFlashButtonVisibility(true)
     }
 
     /**
@@ -615,32 +591,8 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         this.surfaceDestroyed(surfaceHolder!!)
     }
 
-    /**
-     * This method either hides or shows capture button allowing user to capture an image. This is
-     * required because while camera is focusing user should not be allowed to press capture. Once
-     * focusing finishes and a clear preview is available, only then should an image be allowed to
-     * be taken.
-     *
-     * @param visibility If true button is shown, if false button is hidden.
-     */
-    private fun setCaptureButtonVisibility(visibility: Boolean) {
 
-        captureBtn.visibility = if (visibility) VISIBLE else INVISIBLE
-    }
 
-    /**
-     * This method either hides or shows flash buttons allowing user to control flash. This is
-     * required because after an image is captured a user should not be allowed to control flash
-     * since camera is no longer in preview. Instead of disabling the buttons we hide them from
-     * the user.
-     *
-     * @param visibility If true buttons are show, if false they are hidden.
-     */
-    private fun setFlashButtonVisibility(@Suppress("SameParameterValue") visibility: Boolean) {
-
-        flashOnBtn.visibility = if (visibility) VISIBLE else INVISIBLE
-        flashOffBtn.visibility = if (visibility) VISIBLE else INVISIBLE
-    }
 
     /**
      * Attempts to perform tap-to-focus on camera with given focus region.
@@ -653,7 +605,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         if (!inPreview)
             return
 
-        this.setCaptureButtonVisibility(false)
         statusTextView.text = getString(R.string.autofocus_wait)
 
         val one = 2000
