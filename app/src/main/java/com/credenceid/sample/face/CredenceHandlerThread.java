@@ -46,10 +46,10 @@ public class CredenceHandlerThread extends Thread {
     private static final String[] LICENSES = new String[]{"FaceFastExtractor"};
     private Context mAppCtx;
     //public Handler mHandler;
-    private static NFace sFace = new NFace();
-    private static NSubject sSubject = new NSubject();
-    private static NBiometricTask sTask = null;
-    private static NBiometricStatus sNStatus = NBiometricStatus.NONE;
+    private static NFace sFace;
+    private static NSubject sSubject;
+    private static NBiometricTask sTask;
+    private static NBiometricStatus sNStatus;
     public static Handler sImageHandler = null;
     private static List<NLAttributes> sMonitorredAtributes;
     private static PropertyChangeListener sPptChangeListener;
@@ -61,6 +61,7 @@ public class CredenceHandlerThread extends Thread {
         mAppCtx = appContext;
 
         mIsNeurotecInitialized = false;
+
 
         if(!mIsNeurotecInitialized) {
             // First we initialize the licence manager
@@ -288,7 +289,8 @@ public class CredenceHandlerThread extends Thread {
         NLAttributes[] attributesArray = null;
         Log.d(TAG, "repaint, sSubject.getFaces() Size = " + sSubject.getFaces().size());
         if(sSubject.getFaces().size()>0) {
-            Log.d(TAG, "repaint, sSubject sFace = " + sSubject.getFaces().get(0).toString());
+            Log.d(TAG, "repaint, sSubject sFace Image size= " + sSubject.getFaces().get(0).getImage().getImageSize());
+            Log.d(TAG, "repaint, sSubject getObject size = " + sSubject.getFaces().get(0).getObjects().size());
             if(sSubject.getFaces().get(0).getObjects().size()>0){
                 attributesArray = (NLAttributes[])sSubject.getFaces().get(0).getObjects().toArray();
                 Log.d(TAG, "repaint, sSubject sFace attributesArray Size = " + attributesArray.length);

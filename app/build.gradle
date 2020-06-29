@@ -24,9 +24,9 @@ android {
     }
 
     buildTypes {
-        debug {
-            signingConfig signingConfigs.defaultKey
-        }
+//        debug {
+//            signingConfig signingConfigs.defaultKey
+//        }
         release {
             signingConfig signingConfigs.defaultKey
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'

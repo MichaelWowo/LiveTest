@@ -23,7 +23,7 @@ import kotlinx.android.synthetic.main.act_camera.*
 import java.io.*
 import java.util.*
 
-private val TAG = CameraActivity::class.java.simpleName
+private val TAG = "CID"
 
 /**
  * To obtain high face detection rate we use lowest possible camera resolution for preview.
@@ -77,17 +77,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
         /* Camera is no longer in preview. */
         inPreview = false
 
-        try {
-            val intent = Intent(this, FaceActivity::class.java)
-            intent.putExtra(getString(R.string.camera_image), data)
-
-            finish()
-            startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-
-            Toast.makeText(this, "Unable to run face analysis, retry.", Toast.LENGTH_LONG).show()
-        }
     }
 
 
@@ -226,7 +215,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 //            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
 //                statusTextView.text = "Start thread res = " + resultCode
 //            }
-
             mImageHandler = CredenceHandlerThread(applicationContext)
             mImageHandler!!.start()
         }
@@ -280,21 +268,14 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
             if (success) {
 
                 // directory exists or already created
-                var outputFile: File? = File(sd_main, "face-image-from-camera-$imageCounter.jpg")
-                if (imageCounter < 100) {
-                    if (imageCounter < 10) {
-                        outputFile = File(sd_main, "face-image-from-camera-00$imageCounter.jpg")
-                    } else {
-                    outputFile = File(sd_main, "face-image-from-camera-0$imageCounter.jpg")
-                    }
-                }
+                var outputFile: File? = File(sd_main, "face-image-from-camera.jpg")
 
                 try{
                     // Compress the bitmap and save in jpg format
                     val stream: OutputStream = FileOutputStream(outputFile)
                     img?.compress(Bitmap.CompressFormat.JPEG,100,stream)
                     if (outputFile != null) {
-                        Log.d(TAG, "Uri " + Uri.parse(outputFile.absolutePath) + " send to service")
+                        Log.d(TAG, "Uri " + Uri.parse(outputFile.absolutePath) + " send to Handler")
 //                        App!!.BioManager?.sendImageToThreadForFaceTemplateWithLiveness(Uri.parse(outputFile.absolutePath)) { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
 //                            statusTextView.text = "Send image to thread res = " + resultCode
 //                        }
@@ -304,7 +285,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
                     }
                     stream.flush()
                     stream.close()
-                    imageCounter++
                 }catch (e:IOException){
                     e.printStackTrace()
                 }
@@ -744,7 +724,6 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         /* Save fixed color image as final good Bitmap. */
         var bm = BitmapFactory.decodeByteArray(outStream.toByteArray(), 0, outStream.size())
-
 
         sendImageToFaceEngine(bm);
 

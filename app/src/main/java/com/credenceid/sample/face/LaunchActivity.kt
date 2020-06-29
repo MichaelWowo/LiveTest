@@ -1,7 +1,6 @@
     package com.credenceid.sample.face
 
-import android.Manifest.permission.CAMERA
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.Manifest.permission.*
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -18,7 +17,10 @@ private const val REQUEST_ALL_PERMISSIONS = 5791
 /**
  * List of different permissions to request for.
  */
-private val PERMISSIONS = arrayOf(CAMERA, WRITE_EXTERNAL_STORAGE)
+private val PERMISSIONS = arrayOf(CAMERA,
+        WRITE_EXTERNAL_STORAGE,
+        READ_EXTERNAL_STORAGE,
+        READ_PHONE_STATE)
 
 class LaunchActivity : Activity() {
 
