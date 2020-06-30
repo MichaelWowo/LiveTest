@@ -32,10 +32,10 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import static android.content.ContentValues.TAG;
 
 public class CredenceHandlerThread extends Thread {
 
@@ -54,6 +54,8 @@ public class CredenceHandlerThread extends Thread {
     private static List<NLAttributes> sMonitorredAtributes;
     private static PropertyChangeListener sPptChangeListener;
 
+    private static final String TAG = "Credence ID SampleFace";
+
     private boolean mIsNeurotecInitialized;
 
     public CredenceHandlerThread(Context appContext) {
@@ -62,20 +64,14 @@ public class CredenceHandlerThread extends Thread {
 
         mIsNeurotecInitialized = false;
 
-
-        if(!mIsNeurotecInitialized) {
-            // First we initialize the licence manager
-            if(!NLicenseManager.getTrialMode()) {
-                NLicenseManager.setTrialMode(false);
-            }
-            System.setProperty("jna.nounpack", "true");
-            System.setProperty("java.io.tmpdir", mAppCtx.getCacheDir().getAbsolutePath());
-            NCore.setContext(mAppCtx);
-            NLicenseManager.initialize();
-            mIsNeurotecInitialized = true;
-        }
+        System.setProperty("jna.nounpack", "true");
+        System.setProperty("java.io.tmpdir", mAppCtx.getCacheDir().getAbsolutePath());
+        NCore.setContext(mAppCtx);
+        NLicenseManager.initialize();
 
         init();
+
+        mIsNeurotecInitialized = true;
 
         sMonitorredAtributes = new ArrayList<>();
 
@@ -354,18 +350,52 @@ public class CredenceHandlerThread extends Thread {
 
     private void init() {
 
-        Log.i(TAG, "Initialisation started");
+        Log.i(TAG, "Initialisation starting");
+
+        try {
+            NeurotecLicensingManager.getInstance().obtain(mAppCtx, neurotecFaceEngineAdditionalComponents());
+            if (NeurotecLicensingManager.getInstance().obtain(mAppCtx, neurotecFaceEngineMandatoryComponents())) {
+                Log.i(TAG, "Neurotech Face Engine Licenses obtained.");
+            } else {
+                mIsNeurotecInitialized = false;
+                Log.i(TAG, "Neurotech Face Engine Licenses partially obtained.");
+            }
+        } catch (Exception e) {
+            mIsNeurotecInitialized = false;
+            Log.i(TAG, "Neurotech Face Engine License obtain failed - " +e.toString());
+        }
+
         sBiometricClient = new NBiometricClient();
-        sBiometricClient.setFacesDetectAllFeaturePoints(true);
-        sBiometricClient.setFacesDetectBaseFeaturePoints(true);
-        sBiometricClient.setFacesRecognizeExpression(true);
-        sBiometricClient.setFacesDetectProperties(true);
-        sBiometricClient.setFacesDetermineGender(true);
-        sBiometricClient.setFacesDetermineAge(true);
+
+        if(null != sBiometricClient){
+            // We initialize the client with features that will be required.
+            sBiometricClient.setFacesDetectAllFeaturePoints(true);
+            sBiometricClient.setFacesDetectBaseFeaturePoints(true);
+            sBiometricClient.setFacesRecognizeExpression(true);
+            sBiometricClient.setFacesDetectProperties(true);
+            sBiometricClient.setFacesDetermineGender(true);
+            sBiometricClient.setFacesDetermineAge(true);
+            // Initialize NBiometricClient
+            sBiometricClient.initialize();
+            mIsNeurotecInitialized = true;
+            Log.i(TAG, "Neurotech Face Client initialized.");
+        }
         // Initialize NBiometricClient
-        sBiometricClient.initialize();
         sSubject = new NSubject();
         sFace = new NFace();
         mIsNeurotecInit = true;
+    }
+
+
+    public static List<String> neurotecFaceEngineAdditionalComponents() {
+        return Arrays.asList(NeurotecLicensingManager.LICENSE_FACE_STANDARDS,
+                NeurotecLicensingManager.LICENSE_FACE_MATCHING_FAST,
+                NeurotecLicensingManager.LICENSE_FACE_SEGMENTS_DETECTION);
+    }
+
+    public static List<String> neurotecFaceEngineMandatoryComponents() {
+        return Arrays.asList(NeurotecLicensingManager.LICENSE_FACE_DETECTION,
+                NeurotecLicensingManager.LICENSE_FACE_EXTRACTION,
+                NeurotecLicensingManager.LICENSE_FACE_MATCHING);
     }
 }

@@ -199,18 +199,12 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
 
         startLivenessBtn.setOnClickListener {
-//            App.BioManager!!.startThreadForFaceTemplateWithLiveness { resultCode: Biometrics.ResultCode, bytes: ByteArray ->
-//                statusTextView.text = "Start thread res = " + resultCode
-//            }
             mImageHandler = CredenceHandlerThread(applicationContext)
             mImageHandler!!.start()
         }
 
 
         stopLivenessBtn.setOnClickListener {
-//            App.BioManager!!.stopThreadForFaceTemplateWithLiveness{ resultCode: Biometrics.ResultCode, bytes: ByteArray ->
-//                statusTextView.text = "Stop thread res = " + resultCode
-//            }
             mImageHandler!!.interrupt()
             mImageHandler = null
         }
