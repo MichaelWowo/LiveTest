@@ -478,7 +478,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         val parameters = camera!!.parameters
 
-            parameters.setRotation(180)
+            parameters.setRotation(90)
 
         camera!!.parameters = parameters
     }
@@ -669,7 +669,7 @@ class CameraActivity : Activity(), SurfaceHolder.Callback {
 
         /* Save fixed color image as final good Bitmap. */
         var bm = BitmapFactory.decodeByteArray(outStream.toByteArray(), 0, outStream.size())
-
+        bm = Utils.rotateBitmap(bm, 270f)
         sendImageToFaceEngine(bm);
 
         /* If camera was closed or preview stopped, immediately exit out. This is done so that

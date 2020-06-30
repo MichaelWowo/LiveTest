@@ -88,7 +88,7 @@ public class CredenceHandlerThread extends Thread {
 
         try {
             // Start extraction from stream
-            sBiometricClient.setFacesLivenessMode(NLivenessMode.SIMPLE);
+            sBiometricClient.setFacesLivenessMode(NLivenessMode.ACTIVE);
             sFace.setCaptureOptions(EnumSet.of(NBiometricCaptureOption.STREAM));
             sFace.setHasMoreSamples(true);
             for(NLAttributes item : sFace.getObjects()){
@@ -188,14 +188,7 @@ public class CredenceHandlerThread extends Thread {
                                     Log.d(TAG, "mAttributes size = " + mAttributes.size());
                                     if (mAttributes.size() > 0) {
 
-                                        Log.d(TAG   , "Liveness ? ");
-                                        Log.d(TAG, "LivenessAction Size: " + mAttributes.get(0).getLivenessAction().size());
-                                        for(NLivenessAction action :mAttributes.get(0).getLivenessAction()){
-                                            Log.d(TAG, "Liveness Action = " + action.name());
-                                        }
-                                        Log.d(TAG, "Liveness TargetPitch: " + mAttributes.get(0).getLivenessTargetPitch());
-                                        Log.d(TAG, "Liveness TargetYaw: " + mAttributes.get(0).getLivenessTargetYaw());
-                                        Log.d(TAG, "LivenessScore = " + mAttributes.get(0).getLivenessScore());
+                                        Log.d(TAG, "Template CREATED.");
 
                                         NLAttributes nLAttributes = mAttributes.get(0);
                                         rect = nLAttributes.getBoundingRect();
@@ -266,6 +259,9 @@ public class CredenceHandlerThread extends Thread {
                             } catch (IOException e) {
                                 e.printStackTrace();
                                 Log.e(TAG, e.toString());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Log.e(TAG, e.toString());
                             }
                         }else{
                             Log.e(TAG, "Neurotec is not initialized");
@@ -310,10 +306,19 @@ public class CredenceHandlerThread extends Thread {
 
                 NLAttributes attributes = attributesArray[i];
                 EnumSet<NLivenessAction> action = attributes.getLivenessAction();
-                Log.d(TAG, "repaint, attributes action size = " + attributes.getLivenessAction().size());
+                Log.d(TAG, "repaint, attributes action size = " + action.size());
                 Log.d(TAG, "repaint, Liveness Score = " + Byte.valueOf(attributes.getLivenessScore()));
                 if(action.size()>1){
-                    Log.d(TAG, "repaint, attributes action = " + attributes.getLivenessAction().toArray()[0].toString());
+                    Log.d(TAG, "repaint, attributes action :");
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.ROTATE_YAW)?"YAW":" NOT YAW"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.KEEP_ROTATING_YAW)?"KEEP_ROTATING_YAW":" NOT KEEP_ROTATING_YAW"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.BLINK)?"BLINK":" NOT BLINK"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.KEEP_STILL)?"KEEP_STILL":" NOT KEEP_STILL"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_DOWN)?"TURN_DOWN":" NOT TURN_DOWN"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_LEFT)?"TURN_LEFT":" NOT TURN_LEFT"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_RIGHT)?"TURN_RIGHT":" NOT TURN_RIGHT"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_TO_CENTER)?"TURN_TO_CENTER":" NOT TURN_TO_CENTER"));
+                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_UP)?"TURN_UP":" NOT TURN_UP"));
                     boolean rotation = action.equals(NLivenessAction.ROTATE_YAW);
                     boolean blink = action.equals(NLivenessAction.BLINK);
                     boolean keepStill = action.equals(NLivenessAction.KEEP_STILL);
