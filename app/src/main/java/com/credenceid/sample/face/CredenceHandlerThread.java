@@ -286,12 +286,21 @@ public class CredenceHandlerThread extends Thread {
             if(sSubject.getFaces().get(0).getObjects().size()>0){
                 attributesArray = (NLAttributes[])sSubject.getFaces().get(0).getObjects().toArray();
                 Log.d(TAG, "repaint, sSubject sFace attributesArray Size = " + attributesArray.length);
-                if(attributesArray.length > 1) {
+                if(attributesArray.length > 0) {
                     Rect rect = attributesArray[0].getBoundingRect();
                         Log.d(TAG, "rect left=" + rect.left
                             + ", top=" + (rect.top)
                             + ", right=" + rect.right
                             + ", bottom=" + rect.bottom);
+
+
+                    NLAttributes attributes  = (NLAttributes)sSubject.getFaces().get(0).getObjects().get(0);
+                    EnumSet<NLivenessAction> set = EnumSet.noneOf(NLivenessAction.class);
+                    set.add(NLivenessAction.BLINK);
+                    set.add(NLivenessAction.TURN_LEFT);
+                    set.add(NLivenessAction.TURN_RIGHT);
+                    attributes.setLivenessAction(set);
+
 
                 }
 
@@ -310,15 +319,15 @@ public class CredenceHandlerThread extends Thread {
                 Log.d(TAG, "repaint, Liveness Score = " + Byte.valueOf(attributes.getLivenessScore()));
                 if(action.size()>1){
                     Log.d(TAG, "repaint, attributes action :");
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.ROTATE_YAW)?"YAW":" NOT YAW"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.KEEP_ROTATING_YAW)?"KEEP_ROTATING_YAW":" NOT KEEP_ROTATING_YAW"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.BLINK)?"BLINK":" NOT BLINK"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.KEEP_STILL)?"KEEP_STILL":" NOT KEEP_STILL"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_DOWN)?"TURN_DOWN":" NOT TURN_DOWN"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_LEFT)?"TURN_LEFT":" NOT TURN_LEFT"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_RIGHT)?"TURN_RIGHT":" NOT TURN_RIGHT"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_TO_CENTER)?"TURN_TO_CENTER":" NOT TURN_TO_CENTER"));
-                    Log.d(TAG, "=> " + (action.equals(NLivenessAction.TURN_UP)?"TURN_UP":" NOT TURN_UP"));
+                    Log.d(TAG, (action.equals(NLivenessAction.ROTATE_YAW)?"=> YAW":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.KEEP_ROTATING_YAW)?"=> KEEP_ROTATING_YAW":" "));
+                    Log.d(TAG, (action.equals(NLivenessAction.BLINK)?"=> BLINK":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.KEEP_STILL)?"=> KEEP_STILL":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.TURN_DOWN)?"=> TURN_DOWN":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.TURN_LEFT)?"=> TURN_LEFT":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.TURN_RIGHT)?"=> TURN_RIGHT":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.TURN_TO_CENTER)?"=> TURN_TO_CENTER":""));
+                    Log.d(TAG, (action.equals(NLivenessAction.TURN_UP)?"=> TURN_UP":""));
                     boolean rotation = action.equals(NLivenessAction.ROTATE_YAW);
                     boolean blink = action.equals(NLivenessAction.BLINK);
                     boolean keepStill = action.equals(NLivenessAction.KEEP_STILL);
